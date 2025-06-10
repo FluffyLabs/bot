@@ -21,11 +21,12 @@
     "probot": "^13.0.1"
   },
   "devDependencies": {
+    "@octokit/types": "^14.1.0",
     "@types/node": "^20.0.0",
     "nock": "^14.0.0-beta.5",
     "smee-client": "^2.0.0",
-    "vitest": "^1.3.1",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^1.3.1"
   },
   "engines": {
     "node": ">= 18"

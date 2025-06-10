@@ -5,6 +5,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { describe, beforeEach, afterEach, test, expect, vi } from "vitest";
+import type { GitHubApi } from "../src/types.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -55,7 +56,7 @@ const tipCommentPayload = {
 };
 
 describe("Tipping Bot E2E", () => {
-  let probot: any;
+  let probot: Probot;
 
   beforeEach(() => {
     nock.disableNetConnect();
@@ -85,7 +86,7 @@ describe("Tipping Bot E2E", () => {
       .get("/orgs/fluffylabs/teams/core-team/memberships/alice")
       .reply(200, { state: "active" })
       // Expect success comment
-      .post("/repos/hiimbex/testing-things/issues/1/comments", (body: any) => {
+      .post("/repos/hiimbex/testing-things/issues/1/comments", (body: { body: string }) => {
         expect(body.body).toContain("✅ **Tip validated**");
         expect(body.body).toContain("@alice");
         expect(body.body).toContain("10 DOT");
@@ -117,7 +118,7 @@ describe("Tipping Bot E2E", () => {
       .get("/orgs/fluffylabs/teams/core-team/memberships/unauthorized")
       .reply(404)
       // Expect error comment
-      .post("/repos/hiimbex/testing-things/issues/1/comments", (body: any) => {
+      .post("/repos/hiimbex/testing-things/issues/1/comments", (body: { body: string }) => {
         expect(body.body).toContain("❌");
         expect(body.body).toContain("Authorization failed");
         return true;
@@ -142,7 +143,7 @@ describe("Tipping Bot E2E", () => {
       .post("/app/installations/2/access_tokens")
       .reply(200, { token: "test", permissions: { issues: "write" } })
       // Expect error comment for invalid address
-      .post("/repos/hiimbex/testing-things/issues/1/comments", (body: any) => {
+      .post("/repos/hiimbex/testing-things/issues/1/comments", (body: { body: string }) => {
         expect(body.body).toContain("❌");
         expect(body.body).toContain("Invalid tip command");
         return true;

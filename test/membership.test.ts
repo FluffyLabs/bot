@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { checkTeamMembership, checkOrgMembership, checkMembership } from '../src/membership.js';
+import type { GitHubApi } from '../src/types.js';
 
 describe('Membership', () => {
-  let mockOctokit: any;
+  let mockOctokit: GitHubApi;
 
   beforeEach(() => {
     mockOctokit = {
@@ -15,7 +16,7 @@ describe('Membership', () => {
           getMembershipForUser: vi.fn(),
         },
       },
-    };
+    } as GitHubApi;
   });
 
   describe('checkTeamMembership', () => {

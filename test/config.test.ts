@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { reloadConfig, SupportedAsset, isSupportedAsset } from '../src/config.js';
+import { reloadConfig, isSupportedAsset } from '../src/config.js';
+import { SupportedAsset } from '../src/types.js';
 
 describe('Configuration', () => {
   const originalEnv = process.env;

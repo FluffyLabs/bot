@@ -1,16 +1,4 @@
-export interface TipCommand {
-  recipientAddress: string;
-  amount: number;
-  asset: 'DOT' | 'USDC';
-  comment?: string;
-  rawComment: string;
-}
-
-export interface ParseResult {
-  success: boolean;
-  tipCommand?: TipCommand;
-  error?: string;
-}
+import type { TipCommand, ParseResult } from './types.js';
 
 export class CommentParser {
   private static readonly BOT_MENTION = '@fluffylabs-bot';
@@ -124,7 +112,7 @@ export class CommentParser {
   }
 
   private static isSupportedAsset(asset: string): asset is 'DOT' | 'USDC' {
-    return this.SUPPORTED_ASSETS.includes(asset as any);
+    return this.SUPPORTED_ASSETS.includes(asset as 'DOT' | 'USDC');
   }
 
   // Utility method to extract all tip commands from a comment (in case of multiple)

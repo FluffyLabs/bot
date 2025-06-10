@@ -1,19 +1,13 @@
-import { CommentParser, TipCommand } from './parser.js';
+import { CommentParser } from './parser.js';
 import { checkAuthorization } from './authorization.js';
 import { getConfig } from './config.js';
-
-export interface TipProcessingResult {
-  success: boolean;
-  tipCommand?: TipCommand;
-  errorMessage?: string;
-  authorizedUser?: string;
-}
+import type { GitHubApi, TipProcessingResult } from './types.js';
 
 /**
  * Process a comment for tip commands with full validation
  */
 export async function processTipComment(
-  octokit: any,
+  octokit: GitHubApi,
   commentBody: string,
   author: string
 ): Promise<TipProcessingResult> {

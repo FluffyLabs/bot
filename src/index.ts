@@ -1,4 +1,4 @@
-import { Probot } from "probot";
+import type { Probot } from "probot";
 import { processTipComment, containsBotMention } from "./tipping.js";
 
 /**

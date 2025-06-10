@@ -1,17 +1,12 @@
 import { getConfig } from './config.js';
-import { checkMembership, MembershipResult } from './membership.js';
-
-export interface AuthorizationResult {
-  isAuthorized: boolean;
-  reason?: string;
-  membershipDetails?: MembershipResult;
-}
+import { checkMembership } from './membership.js';
+import type { GitHubApi, AuthorizationResult } from './types.js';
 
 /**
  * Check if a user is authorized to send tips
  */
 export async function checkAuthorization(
-  octokit: any,
+  octokit: GitHubApi,
   username: string,
   org?: string,
   team?: string
@@ -61,7 +56,7 @@ export async function checkAuthorization(
  * Simple boolean check if user can tip
  */
 export async function canUserTip(
-  octokit: any,
+  octokit: GitHubApi,
   username: string,
   org?: string,
   team?: string

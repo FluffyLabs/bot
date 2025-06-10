@@ -1,16 +1,5 @@
-export interface TippingConfig {
-  github: {
-    org: string;
-    team: string;
-    botName: string;
-  };
-  blockchain: {
-    walletSeed: string;
-    assetHubRpc: string;
-    maxDotTip: number;
-    maxUsdcTip: number;
-  };
-}
+import type { TippingConfig } from './types.js';
+import { SupportedAsset } from './types.js';
 
 class ConfigError extends Error {
   constructor(message: string) {
@@ -95,12 +84,6 @@ export function reloadConfig(): TippingConfig {
 
 // Export the config getter function instead of eager loading
 // Use getConfig() or reloadConfig() in your code instead of importing config directly
-
-// Export supported assets enum
-export enum SupportedAsset {
-  DOT = 'DOT',
-  USDC = 'USDC',
-}
 
 // Export asset validation function
 export function isSupportedAsset(asset: string): asset is keyof typeof SupportedAsset {

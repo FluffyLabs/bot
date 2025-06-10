@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { processTipComment, containsBotMention } from '../src/tipping.js';
+import type { GitHubApi } from '../src/types.js';
 
 // Mock the modules
 vi.mock('../src/parser.js', () => ({
@@ -26,10 +27,10 @@ import { CommentParser } from '../src/parser.js';
 import { checkAuthorization } from '../src/authorization.js';
 
 describe('Tipping', () => {
-  let mockOctokit: any;
+  let mockOctokit: GitHubApi;
 
   beforeEach(() => {
-    mockOctokit = {};
+    mockOctokit = {} as GitHubApi;
     vi.clearAllMocks();
   });
 

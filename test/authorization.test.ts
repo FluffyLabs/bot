@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { checkAuthorization, canUserTip } from '../src/authorization.js';
+import type { GitHubApi } from '../src/types.js';
 
 // Mock the config module
 vi.mock('../src/config.js', () => ({
@@ -19,7 +20,7 @@ vi.mock('../src/config.js', () => ({
 }));
 
 describe('Authorization', () => {
-  let mockOctokit: any;
+  let mockOctokit: GitHubApi;
 
   beforeEach(() => {
     mockOctokit = {
@@ -32,7 +33,7 @@ describe('Authorization', () => {
           getMembershipForUser: vi.fn(),
         },
       },
-    };
+    } as GitHubApi;
   });
 
   describe('checkAuthorization', () => {
