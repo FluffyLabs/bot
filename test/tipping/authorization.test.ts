@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { checkAuthorization, canUserTip } from '../src/authorization.js';
-import type { GitHubApi } from '../src/types.js';
+import { GitHubApi } from '../../src/types.js';
+import { canUserTip, checkAuthorization } from '../../src/tipping/authorization.js';
 
 // Mock the config module
-vi.mock('../src/config.js', () => ({
+vi.mock('../../src/config.js', () => ({
   getConfig: vi.fn(() => ({
     github: {
       org: 'fluffylabs',

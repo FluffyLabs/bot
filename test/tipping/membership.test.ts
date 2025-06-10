@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { checkTeamMembership, checkOrgMembership, checkMembership } from '../src/membership.js';
-import type { GitHubApi } from '../src/types.js';
+import { GitHubApi } from '../../src/types.js';
+import { checkMembership, checkOrgMembership, checkTeamMembership } from '../../src/tipping/membership.js';
 
 describe('Membership', () => {
   let mockOctokit: GitHubApi;

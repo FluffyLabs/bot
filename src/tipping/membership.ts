@@ -1,4 +1,9 @@
-import type { GitHubApi, MembershipResult, MembershipState, GitHubApiError } from './types.js';
+import {
+  GitHubApi,
+  GitHubApiError,
+  MembershipResult,
+  MembershipState,
+} from "../types.js";
 
 /**
  * Check if a user is a member of a specific team in an organization
@@ -7,7 +12,7 @@ export async function checkTeamMembership(
   octokit: GitHubApi,
   org: string,
   team: string,
-  username: string
+  username: string,
 ): Promise<MembershipResult> {
   try {
     // Get team info
@@ -18,17 +23,17 @@ export async function checkTeamMembership(
 
     try {
       // Check membership
-      const membershipResponse = await octokit.rest.teams.getMembershipForUserInOrg({
-        org,
-        team_slug: teamResponse.data.slug,
-        username,
-      });
+      const membershipResponse =
+        await octokit.rest.teams.getMembershipForUserInOrg({
+          org,
+          team_slug: teamResponse.data.slug,
+          username,
+        });
 
       return {
-        isMember: membershipResponse.data.state === 'active',
-        state: membershipResponse.data.state as MembershipState
+        isMember: membershipResponse.data.state === "active",
+        state: membershipResponse.data.state as MembershipState,
       };
-
     } catch (membershipError: unknown) {
       const apiError = membershipError as GitHubApiError;
       if (apiError.status === 404) {
@@ -38,15 +43,14 @@ export async function checkTeamMembership(
       
       return {
         isMember: false,
-        error: `Failed to check team membership: ${apiError.message || 'Unknown error'}`
+        error: `Failed to check team membership: ${apiError.message || "Unknown error"}`,
       };
     }
-
   } catch (error: unknown) {
     const apiError = error as GitHubApiError;
     return {
       isMember: false,
-      error: `Failed to check team membership: ${apiError.message || 'Unknown error'}`
+      error: `Failed to check team membership: ${apiError.message || "Unknown error"}`,
     };
   }
 }
@@ -57,7 +61,7 @@ export async function checkTeamMembership(
 export async function checkOrgMembership(
   octokit: GitHubApi,
   org: string,
-  username: string
+  username: string,
 ): Promise<MembershipResult> {
   try {
     const membershipResponse = await octokit.rest.orgs.getMembershipForUser({
@@ -66,10 +70,9 @@ export async function checkOrgMembership(
     });
 
     return {
-      isMember: membershipResponse.data.state === 'active',
-      state: membershipResponse.data.state as MembershipState
+      isMember: membershipResponse.data.state === "active",
+      state: membershipResponse.data.state as MembershipState,
     };
-
   } catch (error: unknown) {
     const apiError = error as GitHubApiError;
     if (apiError.status === 404) {
@@ -78,7 +81,7 @@ export async function checkOrgMembership(
 
     return {
       isMember: false,
-      error: `Failed to check organization membership: ${apiError.message || 'Unknown error'}`
+      error: `Failed to check organization membership: ${apiError.message || "Unknown error"}`,
     };
   }
 }
@@ -90,10 +93,10 @@ export async function checkMembership(
   octokit: GitHubApi,
   org: string,
   team: string,
-  username: string
+  username: string,
 ): Promise<MembershipResult> {
   const teamResult = await checkTeamMembership(octokit, org, team, username);
-  
+
   // If team check succeeded and user is a member, return the result
   if (teamResult.isMember) {
     return teamResult;
@@ -101,11 +104,11 @@ export async function checkMembership(
 
   // Try org membership as fallback (either team failed or user is not a team member)
   const orgResult = await checkOrgMembership(octokit, org, username);
-  
+
   if (orgResult.isMember) {
     return {
       ...orgResult,
-      error: `Warning: Could not verify team membership, but user is an organization member`
+      error: `Warning: Could not verify team membership, but user is an organization member`,
     };
   }
 

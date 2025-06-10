@@ -1,10 +1,9 @@
-import type { TippingConfig } from './types.js';
-import { SupportedAsset } from './types.js';
+import { SupportedAsset, TippingConfig } from "./tipping/types.js";
 
 class ConfigError extends Error {
   constructor(message: string) {
     super(`Configuration Error: ${message}`);
-    this.name = 'ConfigError';
+    this.name = "ConfigError";
   }
 }
 
@@ -31,28 +30,33 @@ function getRequiredNumericEnv(key: string): number {
 
 function validateWalletSeed(seed: string): void {
   // Basic validation - should be a valid mnemonic or hex seed
-  const words = seed.trim().split(' ');
-  if (words.length !== 12 && words.length !== 24 && !seed.startsWith('0x')) {
-    throw new ConfigError('WALLET_SEED must be a 12 or 24 word mnemonic phrase or hex seed');
+  const words = seed.trim().split(" ");
+  if (words.length !== 12 && words.length !== 24 && !seed.startsWith("0x")) {
+    throw new ConfigError(
+      "WALLET_SEED must be a 12 or 24 word mnemonic phrase or hex seed",
+    );
   }
 }
 
 function loadConfig(): TippingConfig {
   try {
-    const walletSeed = getRequiredEnv('WALLET_SEED');
+    const walletSeed = getRequiredEnv("WALLET_SEED");
     validateWalletSeed(walletSeed);
 
     const config: TippingConfig = {
       github: {
-        org: getRequiredEnv('GITHUB_ORG'),
-        team: getRequiredEnv('GITHUB_TEAM'),
-        botName: 'fluffylabs-bot', // Hardcoded as specified in format
+        org: getRequiredEnv("GITHUB_ORG"),
+        team: getRequiredEnv("GITHUB_TEAM"),
+        botName: "fluffylabs-bot", // Hardcoded as specified in format
       },
       blockchain: {
         walletSeed,
-        assetHubRpc: getOptionalEnv('ASSET_HUB_RPC', 'wss://polkadot-asset-hub-rpc.polkadot.io'),
-        maxDotTip: getRequiredNumericEnv('MAX_DOT_TIP'),
-        maxUsdcTip: getRequiredNumericEnv('MAX_USDC_TIP'),
+        assetHubRpc: getOptionalEnv(
+          "ASSET_HUB_RPC",
+          "wss://polkadot-asset-hub-rpc.polkadot.io",
+        ),
+        maxDotTip: getRequiredNumericEnv("MAX_DOT_TIP"),
+        maxUsdcTip: getRequiredNumericEnv("MAX_USDC_TIP"),
       },
     };
 
@@ -86,6 +90,8 @@ export function reloadConfig(): TippingConfig {
 // Use getConfig() or reloadConfig() in your code instead of importing config directly
 
 // Export asset validation function
-export function isSupportedAsset(asset: string): asset is keyof typeof SupportedAsset {
+export function isSupportedAsset(
+  asset: string,
+): asset is keyof typeof SupportedAsset {
   return Object.values(SupportedAsset).includes(asset as SupportedAsset);
 }

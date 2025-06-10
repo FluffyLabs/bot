@@ -1,20 +1,23 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { processTipComment, containsBotMention } from '../src/tipping.js';
-import type { GitHubApi } from '../src/types.js';
+import { processTipComment, containsBotMention } from '../../src/tipping/tipping.js';
+import type { GitHubApi } from '../../src/types.js';
+
+import { CommentParser } from '../../src/tipping/parser.js';
+import { checkAuthorization } from '../../src/tipping/authorization.js';
 
 // Mock the modules
-vi.mock('../src/parser.js', () => ({
+vi.mock('../../src/tipping/parser.js', () => ({
   CommentParser: {
     parseComment: vi.fn(),
     containsBotMention: vi.fn(),
   }
 }));
 
-vi.mock('../src/authorization.js', () => ({
+vi.mock('../../src/tipping/authorization.js', () => ({
   checkAuthorization: vi.fn(),
 }));
 
-vi.mock('../src/config.js', () => ({
+vi.mock('../../src/config.js', () => ({
   getConfig: vi.fn(() => ({
     blockchain: {
       maxDotTip: 100,
@@ -22,9 +25,6 @@ vi.mock('../src/config.js', () => ({
     }
   }))
 }));
-
-import { CommentParser } from '../src/parser.js';
-import { checkAuthorization } from '../src/authorization.js';
 
 describe('Tipping', () => {
   let mockOctokit: GitHubApi;
@@ -37,18 +37,19 @@ describe('Tipping', () => {
   describe('processTipComment', () => {
     it('should process valid tip successfully', async () => {
       // Mock successful parsing
-      (CommentParser.parseComment as any).mockReturnValue({
+      vi.mocked(CommentParser.parseComment).mockReturnValue({
         success: true,
         tipCommand: {
           recipientAddress: '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY',
           amount: 10,
           asset: 'DOT',
-          comment: 'great work!'
+          comment: 'great work!',
+          rawComment: '@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 10 DOT great work!'
         }
       });
 
       // Mock successful authorization
-      (checkAuthorization as any).mockResolvedValue({
+      vi.mocked(checkAuthorization).mockResolvedValue({
         isAuthorized: true
       });
 
@@ -60,7 +61,7 @@ describe('Tipping', () => {
     });
 
     it('should fail for invalid comment format', async () => {
-      (CommentParser.parseComment as any).mockReturnValue({
+      vi.mocked(CommentParser.parseComment).mockReturnValue({
         success: false,
         error: 'Invalid Asset Hub address format'
       });
@@ -72,16 +73,17 @@ describe('Tipping', () => {
     });
 
     it('should fail for unauthorized user', async () => {
-      (CommentParser.parseComment as any).mockReturnValue({
+      vi.mocked(CommentParser.parseComment).mockReturnValue({
         success: true,
         tipCommand: {
           recipientAddress: '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY',
           amount: 10,
-          asset: 'DOT'
+          asset: 'DOT',
+          rawComment: '@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 10 DOT'
         }
       });
 
-      (checkAuthorization as any).mockResolvedValue({
+      vi.mocked(checkAuthorization).mockResolvedValue({
         isAuthorized: false,
         reason: 'User not a member of team'
       });
@@ -93,16 +95,17 @@ describe('Tipping', () => {
     });
 
     it('should fail for amount exceeding limits', async () => {
-      (CommentParser.parseComment as any).mockReturnValue({
+      vi.mocked(CommentParser.parseComment).mockReturnValue({
         success: true,
         tipCommand: {
           recipientAddress: '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY',
           amount: 150,
-          asset: 'DOT'
+          asset: 'DOT',
+          rawComment: '@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 150 DOT'
         }
       });
 
-      (checkAuthorization as any).mockResolvedValue({
+      vi.mocked(checkAuthorization).mockResolvedValue({
         isAuthorized: true
       });
 
@@ -113,7 +116,7 @@ describe('Tipping', () => {
     });
 
     it('should silently fail for non-tip comments', async () => {
-      (CommentParser.parseComment as any).mockReturnValue({
+      vi.mocked(CommentParser.parseComment).mockReturnValue({
         success: false,
         error: 'Comment does not mention the bot'
       });
@@ -127,7 +130,7 @@ describe('Tipping', () => {
 
   describe('containsBotMention', () => {
     it('should return true when bot is mentioned', () => {
-      (CommentParser.containsBotMention as any).mockReturnValue(true);
+      vi.mocked(CommentParser.containsBotMention).mockReturnValue(true);
 
       const result = containsBotMention('@fluffylabs-bot hello');
 
@@ -135,7 +138,7 @@ describe('Tipping', () => {
     });
 
     it('should return false when bot is not mentioned', () => {
-      (CommentParser.containsBotMention as any).mockReturnValue(false);
+      vi.mocked(CommentParser.containsBotMention).mockReturnValue(false);
 
       const result = containsBotMention('regular comment');
 
