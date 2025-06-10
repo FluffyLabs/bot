@@ -16,24 +16,34 @@ export async function checkTeamMembership(
       team_slug: team,
     });
 
-    // Check membership
-    const membershipResponse = await octokit.rest.teams.getMembershipForUserInOrg({
-      org,
-      team_slug: teamResponse.data.slug,
-      username,
-    });
+    try {
+      // Check membership
+      const membershipResponse = await octokit.rest.teams.getMembershipForUserInOrg({
+        org,
+        team_slug: teamResponse.data.slug,
+        username,
+      });
 
-    return {
-      isMember: membershipResponse.data.state === 'active',
-      state: membershipResponse.data.state as MembershipState
-    };
+      return {
+        isMember: membershipResponse.data.state === 'active',
+        state: membershipResponse.data.state as MembershipState
+      };
+
+    } catch (membershipError: unknown) {
+      const apiError = membershipError as GitHubApiError;
+      if (apiError.status === 404) {
+        // User is not a member of the team (normal case, not an error)
+        return { isMember: false };
+      }
+      
+      return {
+        isMember: false,
+        error: `Failed to check team membership: ${apiError.message || 'Unknown error'}`
+      };
+    }
 
   } catch (error: unknown) {
     const apiError = error as GitHubApiError;
-    if (apiError.status === 404) {
-      return { isMember: false };
-    }
-    
     return {
       isMember: false,
       error: `Failed to check team membership: ${apiError.message || 'Unknown error'}`
@@ -84,12 +94,12 @@ export async function checkMembership(
 ): Promise<MembershipResult> {
   const teamResult = await checkTeamMembership(octokit, org, team, username);
   
-  // If team check succeeded (no error), return the result
-  if (!teamResult.error) {
+  // If team check succeeded and user is a member, return the result
+  if (teamResult.isMember) {
     return teamResult;
   }
 
-  // Try org membership as fallback
+  // Try org membership as fallback (either team failed or user is not a team member)
   const orgResult = await checkOrgMembership(octokit, org, username);
   
   if (orgResult.isMember) {
@@ -99,5 +109,6 @@ export async function checkMembership(
     };
   }
 
+  // If both failed, prefer team error if available
   return teamResult;
 }

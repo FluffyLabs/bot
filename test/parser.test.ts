@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { CommentParser } from "../src/parser";
+import { CommentParser } from "../src/parser.js";
 
 describe("CommentParser", () => {
   describe("parseComment", () => {

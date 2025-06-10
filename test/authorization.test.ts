@@ -33,15 +33,15 @@ describe('Authorization', () => {
           getMembershipForUser: vi.fn(),
         },
       },
-    } as GitHubApi;
+    } as unknown as GitHubApi;
   });
 
   describe('checkAuthorization', () => {
     it('should authorize active team member', async () => {
-      mockOctokit.rest.teams.getByName.mockResolvedValue({
+      (mockOctokit.rest.teams.getByName as any).mockResolvedValue({
         data: { slug: 'core-team' }
       });
-      mockOctokit.rest.teams.getMembershipForUserInOrg.mockResolvedValue({
+      (mockOctokit.rest.teams.getMembershipForUserInOrg as any).mockResolvedValue({
         data: { state: 'active' }
       });
 
@@ -53,10 +53,10 @@ describe('Authorization', () => {
     });
 
     it('should not authorize non-team member', async () => {
-      mockOctokit.rest.teams.getByName.mockResolvedValue({
+      (mockOctokit.rest.teams.getByName as any).mockResolvedValue({
         data: { slug: 'core-team' }
       });
-      mockOctokit.rest.teams.getMembershipForUserInOrg.mockRejectedValue({
+      (mockOctokit.rest.teams.getMembershipForUserInOrg as any).mockRejectedValue({
         status: 404
       });
 
@@ -67,10 +67,10 @@ describe('Authorization', () => {
     });
 
     it('should not authorize pending team member', async () => {
-      mockOctokit.rest.teams.getByName.mockResolvedValue({
+      (mockOctokit.rest.teams.getByName as any).mockResolvedValue({
         data: { slug: 'core-team' }
       });
-      mockOctokit.rest.teams.getMembershipForUserInOrg.mockResolvedValue({
+      (mockOctokit.rest.teams.getMembershipForUserInOrg as any).mockResolvedValue({
         data: { state: 'pending' }
       });
 
@@ -81,11 +81,10 @@ describe('Authorization', () => {
     });
 
     it('should authorize with org fallback when team check fails', async () => {
-      mockOctokit.rest.teams.getByName.mockRejectedValue({
-        status: 403,
-        message: 'Forbidden'
+      (mockOctokit.rest.teams.getByName as any).mockRejectedValue({
+        status: 404
       });
-      mockOctokit.rest.orgs.getMembershipForUser.mockResolvedValue({
+      (mockOctokit.rest.orgs.getMembershipForUser as any).mockResolvedValue({
         data: { state: 'active' }
       });
 
@@ -96,10 +95,10 @@ describe('Authorization', () => {
     });
 
     it('should use custom org and team when provided', async () => {
-      mockOctokit.rest.teams.getByName.mockResolvedValue({
-        data: { slug: 'custom-team' }
+      (mockOctokit.rest.teams.getByName as any).mockResolvedValue({
+        data: { slug: 'core-team' }
       });
-      mockOctokit.rest.teams.getMembershipForUserInOrg.mockResolvedValue({
+      (mockOctokit.rest.teams.getMembershipForUserInOrg as any).mockResolvedValue({
         data: { state: 'active' }
       });
 
@@ -115,10 +114,10 @@ describe('Authorization', () => {
 
   describe('canUserTip', () => {
     it('should return true for authorized user', async () => {
-      mockOctokit.rest.teams.getByName.mockResolvedValue({
+      (mockOctokit.rest.teams.getByName as any).mockResolvedValue({
         data: { slug: 'core-team' }
       });
-      mockOctokit.rest.teams.getMembershipForUserInOrg.mockResolvedValue({
+      (mockOctokit.rest.teams.getMembershipForUserInOrg as any).mockResolvedValue({
         data: { state: 'active' }
       });
 
@@ -128,10 +127,10 @@ describe('Authorization', () => {
     });
 
     it('should return false for unauthorized user', async () => {
-      mockOctokit.rest.teams.getByName.mockResolvedValue({
+      (mockOctokit.rest.teams.getByName as any).mockResolvedValue({
         data: { slug: 'core-team' }
       });
-      mockOctokit.rest.teams.getMembershipForUserInOrg.mockRejectedValue({
+      (mockOctokit.rest.teams.getMembershipForUserInOrg as any).mockRejectedValue({
         status: 404
       });
 
