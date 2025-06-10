@@ -18,6 +18,7 @@ describe('Configuration', () => {
     it('should load valid configuration', () => {
       // Set up valid environment variables
       process.env.GITHUB_ORG = 'fluffylabs';
+      process.env.GITHUB_TEAM = 'core-team';
       process.env.WALLET_SEED = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
       process.env.MAX_DOT_TIP = '100';
       process.env.MAX_USDC_TIP = '1000';
@@ -26,6 +27,7 @@ describe('Configuration', () => {
       const config = reloadConfig();
 
       expect(config.github.org).toBe('fluffylabs');
+      expect(config.github.team).toBe('core-team');
       expect(config.github.botName).toBe('fluffylabs-bot');
       expect(config.blockchain.walletSeed).toBe('abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about');
       expect(config.blockchain.maxDotTip).toBe(100);
@@ -35,6 +37,7 @@ describe('Configuration', () => {
 
     it('should use default RPC endpoint when not provided', () => {
       process.env.GITHUB_ORG = 'fluffylabs';
+      process.env.GITHUB_TEAM = 'core-team';
       process.env.WALLET_SEED = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
       process.env.MAX_DOT_TIP = '100';
       process.env.MAX_USDC_TIP = '1000';
@@ -47,6 +50,7 @@ describe('Configuration', () => {
 
     it('should accept hex seed format', () => {
       process.env.GITHUB_ORG = 'fluffylabs';
+      process.env.GITHUB_TEAM = 'core-team';
       process.env.WALLET_SEED = '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
       process.env.MAX_DOT_TIP = '100';
       process.env.MAX_USDC_TIP = '1000';
@@ -58,6 +62,7 @@ describe('Configuration', () => {
 
     it('should accept 24 word mnemonic', () => {
       process.env.GITHUB_ORG = 'fluffylabs';
+      process.env.GITHUB_TEAM = 'core-team';
       process.env.WALLET_SEED = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art';
       process.env.MAX_DOT_TIP = '100';
       process.env.MAX_USDC_TIP = '1000';
@@ -68,6 +73,7 @@ describe('Configuration', () => {
     });
 
     it('should throw error for missing GITHUB_ORG', () => {
+      process.env.GITHUB_TEAM = 'core-team';
       process.env.WALLET_SEED = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
       process.env.MAX_DOT_TIP = '100';
       process.env.MAX_USDC_TIP = '1000';
@@ -78,8 +84,21 @@ describe('Configuration', () => {
       }).toThrow('Configuration Error: Missing required environment variable: GITHUB_ORG');
     });
 
+    it('should throw error for missing GITHUB_TEAM', () => {
+      process.env.GITHUB_ORG = 'fluffylabs';
+      process.env.WALLET_SEED = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
+      process.env.MAX_DOT_TIP = '100';
+      process.env.MAX_USDC_TIP = '1000';
+      // Don't set GITHUB_TEAM
+
+      expect(() => {
+        reloadConfig();
+      }).toThrow('Configuration Error: Missing required environment variable: GITHUB_TEAM');
+    });
+
     it('should throw error for missing WALLET_SEED', () => {
       process.env.GITHUB_ORG = 'fluffylabs';
+      process.env.GITHUB_TEAM = 'core-team';
       process.env.MAX_DOT_TIP = '100';
       process.env.MAX_USDC_TIP = '1000';
       // Don't set WALLET_SEED
@@ -91,6 +110,7 @@ describe('Configuration', () => {
 
     it('should throw error for missing MAX_DOT_TIP', () => {
       process.env.GITHUB_ORG = 'fluffylabs';
+      process.env.GITHUB_TEAM = 'core-team';
       process.env.WALLET_SEED = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
       process.env.MAX_USDC_TIP = '1000';
       // Don't set MAX_DOT_TIP
@@ -102,6 +122,7 @@ describe('Configuration', () => {
 
     it('should throw error for missing MAX_USDC_TIP', () => {
       process.env.GITHUB_ORG = 'fluffylabs';
+      process.env.GITHUB_TEAM = 'core-team';
       process.env.WALLET_SEED = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
       process.env.MAX_DOT_TIP = '100';
       // Don't set MAX_USDC_TIP
@@ -113,6 +134,7 @@ describe('Configuration', () => {
 
     it('should throw error for invalid MAX_DOT_TIP - non-numeric', () => {
       process.env.GITHUB_ORG = 'fluffylabs';
+      process.env.GITHUB_TEAM = 'core-team';
       process.env.WALLET_SEED = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
       process.env.MAX_DOT_TIP = 'invalid';
       process.env.MAX_USDC_TIP = '1000';
@@ -124,6 +146,7 @@ describe('Configuration', () => {
 
     it('should throw error for invalid MAX_DOT_TIP - negative', () => {
       process.env.GITHUB_ORG = 'fluffylabs';
+      process.env.GITHUB_TEAM = 'core-team';
       process.env.WALLET_SEED = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
       process.env.MAX_DOT_TIP = '-10';
       process.env.MAX_USDC_TIP = '1000';
@@ -135,6 +158,7 @@ describe('Configuration', () => {
 
     it('should throw error for invalid MAX_DOT_TIP - zero', () => {
       process.env.GITHUB_ORG = 'fluffylabs';
+      process.env.GITHUB_TEAM = 'core-team';
       process.env.WALLET_SEED = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
       process.env.MAX_DOT_TIP = '0';
       process.env.MAX_USDC_TIP = '1000';
@@ -146,6 +170,7 @@ describe('Configuration', () => {
 
     it('should throw error for invalid wallet seed - too few words', () => {
       process.env.GITHUB_ORG = 'fluffylabs';
+      process.env.GITHUB_TEAM = 'core-team';
       process.env.WALLET_SEED = 'abandon abandon abandon';
       process.env.MAX_DOT_TIP = '100';
       process.env.MAX_USDC_TIP = '1000';
@@ -157,6 +182,7 @@ describe('Configuration', () => {
 
     it('should throw error for invalid wallet seed - too many words', () => {
       process.env.GITHUB_ORG = 'fluffylabs';
+      process.env.GITHUB_TEAM = 'core-team';
       process.env.WALLET_SEED = 'abandon '.repeat(25).trim();
       process.env.MAX_DOT_TIP = '100';
       process.env.MAX_USDC_TIP = '1000';
@@ -168,6 +194,7 @@ describe('Configuration', () => {
 
     it('should accept decimal values for max tips', () => {
       process.env.GITHUB_ORG = 'fluffylabs';
+      process.env.GITHUB_TEAM = 'core-team';
       process.env.WALLET_SEED = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
       process.env.MAX_DOT_TIP = '100.5';
       process.env.MAX_USDC_TIP = '1000.25';
