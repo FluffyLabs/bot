@@ -10,10 +10,6 @@ updates:
       prefix-development: "deps-dev"
       include: "scope"
     open-pull-requests-limit: 5
-    reviewers:
-      - "fluffylabs/core-team"
-    assignees:
-      - "fluffylabs/core-team"
 
   # Enable version updates for GitHub Actions
   - package-ecosystem: "github-actions"
@@ -24,7 +20,3 @@ updates:
       prefix: "ci"
       include: "scope"
     open-pull-requests-limit: 3
-    reviewers:
-      - "fluffylabs/core-team"
-    assignees:
-      - "fluffylabs/core-team"
