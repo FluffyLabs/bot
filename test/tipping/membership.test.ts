@@ -21,9 +21,6 @@ describe('Membership', () => {
 
   describe('checkTeamMembership', () => {
     it('should return true for active team member', async () => {
-      (mockOctokit.rest.teams.getByName as any).mockResolvedValue({
-        data: { slug: 'core-team' }
-      });
       (mockOctokit.rest.teams.getMembershipForUserInOrg as any).mockResolvedValue({
         data: { state: 'active' }
       });
@@ -36,9 +33,6 @@ describe('Membership', () => {
     });
 
     it('should return false for non-team member', async () => {
-      (mockOctokit.rest.teams.getByName as any).mockResolvedValue({
-        data: { slug: 'core-team' }
-      });
       (mockOctokit.rest.teams.getMembershipForUserInOrg as any).mockRejectedValue({
         status: 404
       });
@@ -50,7 +44,7 @@ describe('Membership', () => {
     });
 
     it('should return false with error for API failures', async () => {
-      (mockOctokit.rest.teams.getByName as any).mockRejectedValue({
+      (mockOctokit.rest.teams.getMembershipForUserInOrg as any).mockRejectedValue({
         status: 403,
         message: 'Forbidden'
       });
@@ -58,6 +52,7 @@ describe('Membership', () => {
       const result = await checkTeamMembership(mockOctokit, 'fluffylabs', 'core-team', 'alice');
 
       expect(result.isMember).toBe(false);
+      expect(result.error).toBeDefined();
       expect(result.error).toContain('Failed to check team membership');
     });
   });
@@ -87,9 +82,6 @@ describe('Membership', () => {
 
   describe('checkMembership', () => {
     it('should return team membership when available', async () => {
-      (mockOctokit.rest.teams.getByName as any).mockResolvedValue({
-        data: { slug: 'core-team' }
-      });
       (mockOctokit.rest.teams.getMembershipForUserInOrg as any).mockResolvedValue({
         data: { state: 'active' }
       });
@@ -102,7 +94,7 @@ describe('Membership', () => {
     });
 
     it('should fallback to org membership when team fails', async () => {
-      (mockOctokit.rest.teams.getByName as any).mockRejectedValue({
+      (mockOctokit.rest.teams.getMembershipForUserInOrg as any).mockRejectedValue({
         status: 404
       });
       (mockOctokit.rest.orgs.getMembershipForUser as any).mockResolvedValue({
@@ -117,7 +109,7 @@ describe('Membership', () => {
     });
 
     it('should return false when both team and org fail', async () => {
-      (mockOctokit.rest.teams.getByName as any).mockRejectedValue({
+      (mockOctokit.rest.teams.getMembershipForUserInOrg as any).mockRejectedValue({
         status: 404
       });
       (mockOctokit.rest.orgs.getMembershipForUser as any).mockRejectedValue({
@@ -127,7 +119,8 @@ describe('Membership', () => {
       const result = await checkMembership(mockOctokit, 'fluffylabs', 'core-team', 'notamember');
 
       expect(result.isMember).toBe(false);
-      expect(result.error).toContain('Failed to check team membership');
+      // 404 is not considered an error - it just means user is not a member
+      expect(result.error).toBeUndefined();
     });
   });
 });

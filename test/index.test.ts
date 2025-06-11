@@ -309,8 +309,6 @@ describe("Tipping Bot E2E", () => {
         },
       })
       // Mock team membership check
-      .get("/orgs/fluffylabs/teams/core-team")
-      .reply(200, { slug: "core-team" })
       .get("/orgs/fluffylabs/teams/core-team/memberships/alice")
       .reply(200, { state: "active" })
       // Expect processing comment
@@ -363,8 +361,6 @@ describe("Tipping Bot E2E", () => {
       .post("/app/installations/2/access_tokens")
       .reply(200, { token: "test", permissions: { issues: "write" } })
       // Mock team membership check failure
-      .get("/orgs/fluffylabs/teams/core-team")
-      .reply(200, { slug: "core-team" })
       .get("/orgs/fluffylabs/teams/core-team/memberships/unauthorized")
       .reply(404)
       // Expect error comment
