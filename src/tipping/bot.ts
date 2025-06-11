@@ -159,17 +159,17 @@ export function setupTippingBot(app: Probot) {
 
             if (warnings.length > 0) {
               context.log.info(`[BOT] ⚠️ Low balance warnings found: ${warnings.length}`);
-              
+
               let warningMessage = "⚠️ **Low Balance Warning** ⚠️\n\n";
               warningMessage += "The tipping bot wallet balance is running low:\n\n";
-              
+
               for (const warning of warnings) {
                 warningMessage += `• **${warning.asset}**: ${warning.currentBalance.toFixed(6)} ${warning.asset} ` +
                   `(threshold: ${warning.threshold} ${warning.asset})\n`;
               }
-              
+
               warningMessage += "\n💡 Please refill the wallet to continue tipping operations.";
-              
+
               context.log.info(`[BOT] 💬 Posting low balance warning...`);
               await context.octokit.issues.createComment({
                 ...context.issue(),
@@ -190,14 +190,22 @@ export function setupTippingBot(app: Probot) {
         await context.octokit.issues.updateComment({
           ...context.issue(),
           comment_id: initialComment.data.id,
-          body:
-            `❌ **Transaction failed**\n` +
-            `**From**: @${author}\n` +
-            `**To**: \`${tip.recipientAddress}\`\n` +
-            `**Amount**: ${tip.amount} ${tip.asset}\n` +
-            `${tip.comment ? `**Message**: ${tip.comment}\n` : ""}` +
-            `\n**Error**: ${txResult.error}\n` +
-            `\nPlease check the configuration and try again.`,
+          body:`
+<details><summary>
+❌ <strong>Transaction failed</strong>
+</summary>
+
+**From**: @${author}
+**To**: \`${tip.recipientAddress}\`
+**Amount**: ${tip.amount} ${tip.asset}
+${tip.comment ? `**Message**: ${tip.comment}\n` : ""}
+
+**Error**:
+\`\`\`
+${txResult.error}
+\`\`\`
+
+</details>`
         });
         context.log.info(`[BOT] ✅ Error message updated - tip processing complete with failure`);
       }
