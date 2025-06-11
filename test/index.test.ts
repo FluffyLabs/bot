@@ -311,6 +311,12 @@ describe("Tipping Bot E2E", () => {
       // Mock team membership check
       .get("/orgs/fluffylabs/teams/core-team/memberships/alice")
       .reply(200, { state: "active" })
+      // Expect eyes reaction for authorized user
+      .post("/repos/hiimbex/testing-things/issues/comments/1/reactions", (body: any) => {
+        expect(body.content).toBe("eyes");
+        return true;
+      })
+      .reply(200)
       // Expect processing comment
       .post(
         "/repos/hiimbex/testing-things/issues/1/comments",
@@ -322,10 +328,10 @@ describe("Tipping Bot E2E", () => {
           return true;
         },
       )
-      .reply(200)
-      // Expect success comment after transaction
-      .post(
-        "/repos/hiimbex/testing-things/issues/1/comments",
+      .reply(200, { id: 123 })
+      // Expect comment update with success after transaction
+      .patch(
+        "/repos/hiimbex/testing-things/issues/comments/123",
         (body: { body: string }) => {
           expect(body.body).toContain("✅ **Tip sent successfully!**");
           expect(body.body).toContain("@alice");
@@ -363,15 +369,14 @@ describe("Tipping Bot E2E", () => {
       // Mock team membership check failure
       .get("/orgs/fluffylabs/teams/core-team/memberships/unauthorized")
       .reply(404)
-      // Expect error comment
-      .post(
-        "/repos/hiimbex/testing-things/issues/1/comments",
-        (body: { body: string }) => {
-          expect(body.body).toContain("❌");
-          expect(body.body).toContain("Authorization failed");
-          return true;
-        },
-      )
+      // Mock organization membership check failure (fallback)
+      .get("/orgs/fluffylabs/memberships/unauthorized")
+      .reply(404)
+      // Expect thumbsdown reaction for unauthorized user
+      .post("/repos/hiimbex/testing-things/issues/comments/1/reactions", (body: any) => {
+        expect(body.content).toBe("-1");
+        return true;
+      })
       .reply(200);
 
     await probot.receive({
@@ -395,7 +400,16 @@ describe("Tipping Bot E2E", () => {
     const mock = nock("https://api.github.com")
       .post("/app/installations/2/access_tokens")
       .reply(200, { token: "test", permissions: { issues: "write" } })
-      // Expect error comment for invalid address
+      // Mock team membership check (user is authorized)
+      .get("/orgs/fluffylabs/teams/core-team/memberships/alice") 
+      .reply(200, { state: "active" })
+      // Expect eyes reaction for authorized user first
+      .post("/repos/hiimbex/testing-things/issues/comments/1/reactions", (body: any) => {
+        expect(body.content).toBe("eyes");
+        return true;
+      })
+      .reply(200)
+      // Expect error comment for invalid address (to authorized user)
       .post(
         "/repos/hiimbex/testing-things/issues/1/comments",
         (body: { body: string }) => {

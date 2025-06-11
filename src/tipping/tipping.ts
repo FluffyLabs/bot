@@ -30,13 +30,24 @@ export async function processTipComment(
       parseResult.error !== "Comment does not contain a tip command"
     ) {
       console.log(`[TIPPING] ❌ Invalid tip command: ${parseResult.error}`);
+      
+      // Still check authorization for invalid tip commands
+      console.log(`[TIPPING] 🔐 Checking authorization for invalid tip command from @${author}...`);
+      const authResult = await checkAuthorization(octokit, author, org, team);
+      console.log(`[TIPPING] 🔓 Authorization result:`, { 
+        isAuthorized: authResult.isAuthorized, 
+        reason: authResult.reason 
+      });
+
       return {
         success: false,
         errorMessage: `Invalid tip command: ${parseResult.error}`,
+        isAuthorized: authResult.isAuthorized,
+        isTipAttempt: true,
       };
     }
     console.log(`[TIPPING] 🚫 Not a tip command, silent fail: ${parseResult.error}`);
-    return { success: false }; // Silent fail for non-tip comments
+    return { success: false, isAuthorized: false, isTipAttempt: false }; // Silent fail for non-tip comments
   }
 
   const tipCommand = parseResult.tipCommand!;
@@ -61,6 +72,8 @@ export async function processTipComment(
       success: false,
       tipCommand,
       errorMessage: `Authorization failed: ${authResult.reason}`,
+      isAuthorized: false,
+      isTipAttempt: true,
     };
   }
 
@@ -80,6 +93,8 @@ export async function processTipComment(
       success: false,
       tipCommand,
       errorMessage: `Tip amount ${tipCommand.amount} ${tipCommand.asset} exceeds maximum of ${maxAmount} ${tipCommand.asset}`,
+      isAuthorized: true,
+      isTipAttempt: true,
     };
   }
 
@@ -90,6 +105,8 @@ export async function processTipComment(
     success: true,
     tipCommand,
     authorizedUser: author,
+    isAuthorized: true,
+    isTipAttempt: true,
   };
 }
 

@@ -17,6 +17,8 @@ export interface TipProcessingResult {
   tipCommand?: TipCommand;
   errorMessage?: string;
   authorizedUser?: string;
+  isAuthorized?: boolean;
+  isTipAttempt?: boolean;
 }
 
 export interface TippingConfig {

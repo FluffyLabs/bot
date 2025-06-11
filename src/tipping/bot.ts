@@ -18,7 +18,6 @@ export function setupTippingBot(app: Probot) {
       const author = comment.user.login;
 
       context.log.info(`[BOT] 📝 New comment received from @${author}`);
-      context.log.info(`[BOT] 💬 Comment body: "${comment.body}"`);
 
       // Skip bot comments
       if (comment.user.type === "Bot") {
@@ -32,6 +31,7 @@ export function setupTippingBot(app: Probot) {
         return;
       }
 
+      context.log.info(`[BOT] 💬 Comment body: "${comment.body}"`);
       context.log.info(`[BOT] 🎯 Bot mentioned in comment, processing...`);
 
       // Load config
@@ -52,9 +52,28 @@ export function setupTippingBot(app: Probot) {
       );
       context.log.info(`[BOT] 📊 Tip processing result:`, { success: result.success, errorMessage: result.errorMessage });
 
+      // Add reaction when a tip command is detected
+      if (result.tipCommand || result.isTipAttempt) {
+        if (result.isAuthorized) {
+          context.log.info(`[BOT] 👁️ Adding 'eyes' reaction for authorized user`);
+          await context.octokit.reactions.createForIssueComment({
+            ...context.issue(),
+            comment_id: comment.id,
+            content: "eyes",
+          });
+        } else {
+          context.log.info(`[BOT] 👎 Adding 'thumbsdown' reaction for unauthorized user`);
+          await context.octokit.reactions.createForIssueComment({
+            ...context.issue(),
+            comment_id: comment.id,
+            content: "-1",
+          });
+        }
+      }
+
       if (!result.success) {
-        // Only reply if there's an error message (failed tip attempt)
-        if (result.errorMessage) {
+        // Only reply with error message to authorized users who attempted a tip command
+        if (result.errorMessage && result.isTipAttempt && result.isAuthorized) {
           context.log.info(`[BOT] ❌ Tip processing failed: ${result.errorMessage}`);
           context.log.info(`[BOT] 💬 Posting error message to GitHub...`);
           await context.octokit.issues.createComment({
@@ -80,7 +99,7 @@ export function setupTippingBot(app: Probot) {
 
       // Post initial confirmation
       context.log.info(`[BOT] 💬 Posting initial confirmation to GitHub...`);
-      await context.octokit.issues.createComment({
+      const initialComment = await context.octokit.issues.createComment({
         ...context.issue(),
         body:
           `⏳ **Processing tip** from @${author}\n` +
@@ -105,11 +124,12 @@ export function setupTippingBot(app: Probot) {
         error: txResult.error
       });
 
-      // Post transaction result
+      // Update initial comment with transaction result
       if (txResult.success) {
-        context.log.info(`[BOT] 🎉 Transaction successful! Posting success message...`);
-        await context.octokit.issues.createComment({
+        context.log.info(`[BOT] 🎉 Transaction successful! Updating initial comment...`);
+        await context.octokit.issues.updateComment({
           ...context.issue(),
+          comment_id: initialComment.data.id,
           body:
             `✅ **Tip sent successfully!** 🎉\n` +
             `**From**: @${author}\n` +
@@ -120,17 +140,22 @@ export function setupTippingBot(app: Probot) {
             `**Block Hash**: \`${txResult.blockHash}\`\n` +
             `${txResult.explorerUrl ? `**Explorer**: ${txResult.explorerUrl}\n` : ""}`,
         });
-        context.log.info(`[BOT] ✅ Success message posted - tip processing complete!`);
+        context.log.info(`[BOT] ✅ Success message updated - tip processing complete!`);
       } else {
-        context.log.info(`[BOT] ❌ Transaction failed! Posting error message...`);
-        await context.octokit.issues.createComment({
+        context.log.info(`[BOT] ❌ Transaction failed! Updating initial comment...`);
+        await context.octokit.issues.updateComment({
           ...context.issue(),
+          comment_id: initialComment.data.id,
           body:
             `❌ **Transaction failed**\n` +
-            `**Error**: ${txResult.error}\n` +
+            `**From**: @${author}\n` +
+            `**To**: \`${tip.recipientAddress}\`\n` +
+            `**Amount**: ${tip.amount} ${tip.asset}\n` +
+            `${tip.comment ? `**Message**: ${tip.comment}\n` : ""}` +
+            `\n**Error**: ${txResult.error}\n` +
             `\nPlease check the configuration and try again.`,
         });
-        context.log.info(`[BOT] ✅ Error message posted - tip processing complete with failure`);
+        context.log.info(`[BOT] ✅ Error message updated - tip processing complete with failure`);
       }
     },
   );
