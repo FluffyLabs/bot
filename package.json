@@ -15,6 +15,7 @@
     "build": "tsc",
     "prestart": "npm run build",
     "start": "probot run ./lib/src/index.js",
+    "start-prod": "probot run ./lib/src/index.js",
     "dev": "npm run build && npm start",
     "send-tip": "npm run build && node ./lib/scripts/send-tip.js",
     "test": "vitest --run",
