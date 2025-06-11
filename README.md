@@ -1,33 +1,81 @@
-# @fluffylabs/bot
+# FluffyLabs Tipping Bot
 
-> A GitHub App built with [Probot](https://github.com/probot/probot) that FluffyLabs Github bot
+A GitHub bot that enables cryptocurrency tipping on GitHub issues and pull requests using Polkadot Asset Hub.
 
-## Setup
+## Features
+
+- **Tip Commands**: Send DOT or USDC tips via GitHub comments
+- **Authorization**: Team/organization membership-based access control
+- **Reactions**: Visual feedback with emoji reactions (👀 for authorized, 👎 for unauthorized)
+- **Transaction Tracking**: Real-time updates with blockchain transaction details
+- **Error Handling**: Contextual error messages for authorized users only
+
+## Usage
+
+Mention the bot in a comment with a tip command:
+
+```
+@fluffylabs-bot tip <address> <amount> <asset> [optional message]
+```
+
+**Examples:**
+```
+@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 10 DOT great work!
+@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 25 USDC
+```
+
+**Supported Assets:** DOT, USDC
+
+## Development
+
+### Setup
 
 ```sh
-# Install dependencies
 npm install
-
-# Run the bot
+cp .env.example .env
+# Configure environment variables in .env
 npm start
 ```
 
-## Docker
+### Configuration
+
+Required environment variables:
+
+```env
+GITHUB_ORG=your-org
+GITHUB_TEAM=your-team
+WALLET_SEED=your-wallet-seed
+ASSET_HUB_RPC=wss://polkadot-asset-hub-rpc.polkadot.io
+MAX_DOT_TIP=100
+MAX_USDC_TIP=1000
+```
+
+### Testing
 
 ```sh
-# 1. Build container
-docker build -t @fluffylabs/bot .
-
-# 2. Start container
-docker run -e APP_ID=<app-id> -e PRIVATE_KEY=<pem-value> @fluffylabs/bot
+npm test
 ```
+
+### Docker
+
+```sh
+docker build -t fluffylabs-bot .
+docker run --env-file .env fluffylabs-bot
+```
+
+## How It Works
+
+1. **Command Detection**: Bot monitors comments for mentions and tip commands
+2. **Authorization**: Checks team/organization membership via GitHub API
+3. **Validation**: Validates address format, amount limits, and asset support
+4. **Reactions**: Adds emoji reactions based on authorization status
+5. **Transaction**: Sends blockchain transaction via Polkadot Asset Hub
+6. **Updates**: Edits initial comment with transaction results
 
 ## Contributing
 
-If you have suggestions for how @fluffylabs/bot could be improved, or want to report a bug, open an issue! We'd love all and any contributions.
-
-For more, check out the [Contributing Guide](CONTRIBUTING.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 
-[ISC](LICENSE) © 2025 Tomek Drwięga
+[ISC](LICENSE) © 2025 Fluffylabs
