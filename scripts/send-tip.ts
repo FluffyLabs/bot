@@ -108,10 +108,6 @@ async function main() {
       console.log(`  DOT: ${dotBalance.toFixed(4)} DOT`);
       console.log(`  USDC: ${usdcBalance.toFixed(2)} USDC`);
       
-      // Check if we have enough balance
-      const requiredBalance = tip.asset === 'DOT' ? tip.amount : 0;
-      const requiredUsdcBalance = tip.asset === 'USDC' ? tip.amount : 0;
-      
       if (tip.asset === 'DOT' && dotBalance < tip.amount) {
         console.error(`❌ Insufficient DOT balance: need ${tip.amount} DOT, have ${dotBalance.toFixed(4)} DOT`);
         process.exit(1);
