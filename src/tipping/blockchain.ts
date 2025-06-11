@@ -24,12 +24,40 @@ export interface TransactionResult {
 
 export interface BlockchainService {
   sendTip(tipCommand: TipCommand): Promise<TransactionResult>;
+  checkBalance(): Promise<BalanceResult>;
   disconnect(): Promise<void>;
+}
+
+export interface BalanceResult {
+  dotBalance: bigint;
+  usdcBalance: bigint;
+  success: boolean;
+  error?: string;
+}
+
+export interface BalanceWarning {
+  asset: 'DOT' | 'USDC';
+  currentBalance: number;
+  threshold: number;
+  maxTipAmount: number;
 }
 
 // Check if we're in test mode
 function isTestMode(): boolean {
   return process.env.NODE_ENV === 'test' || process.env.VITEST === 'true';
+}
+
+// Helper function to convert blockchain amounts to human readable amounts
+function convertFromBlockchainAmount(amount: bigint, asset: 'DOT' | 'USDC'): number {
+  if (asset === "DOT") {
+    // DOT has 10 decimal places (1 DOT = 10^10 planck)
+    return Number(amount) / 10_000_000_000;
+  } else if (asset === "USDC") {
+    // USDC typically has 6 decimal places (1 USDC = 10^6 units)
+    return Number(amount) / 1_000_000;
+  } else {
+    throw new Error(`Unsupported asset: ${asset}`);
+  }
 }
 
 class AssetHubService implements BlockchainService {
@@ -317,6 +345,68 @@ class AssetHubService implements BlockchainService {
     }
   }
 
+  async checkBalance(): Promise<BalanceResult> {
+    console.log(`[BLOCKCHAIN] 💰 Checking wallet balance...`);
+    
+    try {
+      await this.ensureConnection();
+      
+      if (!this.api) {
+        throw new Error("API not initialized");
+      }
+
+      console.log(`[BLOCKCHAIN] 🔐 Creating signer for balance check...`);
+      const signer = this.createSigner(this.walletSeed);
+      const publicKey = signer.publicKey;
+      
+      // Convert public key to address format
+      console.log(`[BLOCKCHAIN] 🏠 Getting wallet address from public key...`);
+      const { encodeAddress } = await import('@polkadot/util-crypto');
+      const walletAddress = encodeAddress(publicKey, 0); // Polkadot prefix
+      console.log(`[BLOCKCHAIN] 📍 Wallet address: ${walletAddress}`);
+
+      // Query DOT balance
+      console.log(`[BLOCKCHAIN] 💎 Querying DOT balance...`);
+      const dotBalanceQuery = await this.api.query.System.Account.getValue(walletAddress);
+      const dotBalance = dotBalanceQuery.data.free;
+      console.log(`[BLOCKCHAIN] 💰 DOT balance: ${dotBalance} planck (${convertFromBlockchainAmount(dotBalance, 'DOT')} DOT)`);
+
+      // Query USDC balance (Asset ID 1337)
+      console.log(`[BLOCKCHAIN] 🪙 Querying USDC balance...`);
+      const usdcAssetId = 1337;
+      let usdcBalance = 0n;
+      try {
+        const usdcBalanceQuery = await this.api.query.Assets.Account.getValue(usdcAssetId, walletAddress);
+        if (usdcBalanceQuery) {
+          usdcBalance = usdcBalanceQuery.balance;
+        }
+        console.log(`[BLOCKCHAIN] 💰 USDC balance: ${usdcBalance} units (${convertFromBlockchainAmount(usdcBalance, 'USDC')} USDC)`);
+      } catch (error) {
+        console.log(`[BLOCKCHAIN] ⚠️ Could not query USDC balance (asset may not exist): ${error instanceof Error ? error.message : 'Unknown error'}`);
+        // Keep usdcBalance as 0n
+      }
+
+      const result: BalanceResult = {
+        dotBalance,
+        usdcBalance,
+        success: true,
+      };
+
+      console.log(`[BLOCKCHAIN] ✅ Balance check complete`);
+      return result;
+
+    } catch (error) {
+      const errorMessage = `Failed to check wallet balance: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      console.error(`[BLOCKCHAIN] 💥 Balance check failed: ${errorMessage}`);
+      return {
+        dotBalance: 0n,
+        usdcBalance: 0n,
+        success: false,
+        error: errorMessage,
+      };
+    }
+  }
+
   async disconnect(): Promise<void> {
     if (this.connected) {
       try {
@@ -372,6 +462,47 @@ export async function disconnectBlockchain(): Promise<void> {
   } else {
     console.log(`[BLOCKCHAIN] ℹ️ No blockchain service to disconnect`);
   }
+}
+
+/**
+ * Check if wallet balance is below warning threshold (10x max tip amount)
+ */
+export function checkBalanceWarnings(
+  balanceResult: BalanceResult,
+  maxDotTip: number,
+  maxUsdcTip: number,
+): BalanceWarning[] {
+  const warnings: BalanceWarning[] = [];
+
+  if (!balanceResult.success) {
+    return warnings;
+  }
+
+  // Check DOT balance
+  const dotBalance = convertFromBlockchainAmount(balanceResult.dotBalance, 'DOT');
+  const dotThreshold = maxDotTip * 10;
+  if (dotBalance < dotThreshold) {
+    warnings.push({
+      asset: 'DOT',
+      currentBalance: dotBalance,
+      threshold: dotThreshold,
+      maxTipAmount: maxDotTip,
+    });
+  }
+
+  // Check USDC balance
+  const usdcBalance = convertFromBlockchainAmount(balanceResult.usdcBalance, 'USDC');
+  const usdcThreshold = maxUsdcTip * 10;
+  if (usdcBalance < usdcThreshold) {
+    warnings.push({
+      asset: 'USDC',
+      currentBalance: usdcBalance,
+      threshold: usdcThreshold,
+      maxTipAmount: maxUsdcTip,
+    });
+  }
+
+  return warnings;
 }
 
 /**

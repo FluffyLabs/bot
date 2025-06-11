@@ -1,5 +1,5 @@
 import type { TipCommand } from './types.js';
-import { isValidAssetHubAddress } from './blockchain.js';
+import { isValidAssetHubAddress, type BalanceResult } from './blockchain.js';
 import { isSupportedAsset } from '../config.js';
 
 export interface TransactionResult {
@@ -12,6 +12,7 @@ export interface TransactionResult {
 
 export interface BlockchainService {
   sendTip(tipCommand: TipCommand): Promise<TransactionResult>;
+  checkBalance(): Promise<BalanceResult>;
   disconnect(): Promise<void>;
 }
 
@@ -109,6 +110,44 @@ export class MockAssetHubService implements BlockchainService {
 
   private getExplorerUrl(transactionHash: string): string {
     return `https://assethub-polkadot.subscan.io/extrinsic/${transactionHash}`;
+  }
+
+  async checkBalance(): Promise<BalanceResult> {
+    console.log(`[BLOCKCHAIN] 🧪 Starting mock balance check...`);
+    
+    try {
+      // Simulate network delay
+      console.log(`[BLOCKCHAIN] ⏳ Simulating balance query delay...`);
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      // Mock balances - reasonable test amounts
+      // 1000 DOT = 1000 * 10^10 planck
+      const mockDotBalance = BigInt(1000 * 10_000_000_000);
+      // 5000 USDC = 5000 * 10^6 units  
+      const mockUsdcBalance = BigInt(5000 * 1_000_000);
+      
+      console.log(`[BLOCKCHAIN] 💰 Mock DOT balance: ${mockDotBalance} planck (1000 DOT)`);
+      console.log(`[BLOCKCHAIN] 💰 Mock USDC balance: ${mockUsdcBalance} units (5000 USDC)`);
+      
+      const result: BalanceResult = {
+        dotBalance: mockDotBalance,
+        usdcBalance: mockUsdcBalance,
+        success: true,
+      };
+      
+      console.log(`[BLOCKCHAIN] ✅ Mock balance check complete`);
+      return result;
+      
+    } catch (error) {
+      const errorMessage = `Mock balance check failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      console.log(`[BLOCKCHAIN] 💥 Mock balance check failed: ${errorMessage}`);
+      return {
+        dotBalance: 0n,
+        usdcBalance: 0n,
+        success: false,
+        error: errorMessage,
+      };
+    }
   }
 
   async disconnect(): Promise<void> {

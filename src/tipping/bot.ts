@@ -1,6 +1,6 @@
 import { Probot } from "probot";
 import { containsBotMention, processTipComment } from "./tipping.js";
-import { getBlockchainService } from "./blockchain.js";
+import { getBlockchainService, checkBalanceWarnings } from "./blockchain.js";
 import { getConfig } from "../config.js";
 
 /**
@@ -139,19 +139,73 @@ export function setupTippingBot(app: Probot) {
             `\n**Transaction Hash**: \`[${txResult.transactionHash}](${txResult.explorerUrl})\`\n`
         });
         context.log.info(`[BOT] ✅ Success message updated - tip processing complete!`);
+
+        // Check wallet balance and warn if low
+        context.log.info(`[BOT] 💰 Checking wallet balance for low balance warnings...`);
+        try {
+          const balanceResult = await blockchainService.checkBalance();
+          context.log.info(`[BOT] 📊 Balance check result:`, {
+            success: balanceResult.success,
+            dotBalance: balanceResult.dotBalance.toString(),
+            usdcBalance: balanceResult.usdcBalance.toString()
+          });
+
+          if (balanceResult.success) {
+            const warnings = checkBalanceWarnings(
+              balanceResult,
+              config.blockchain.maxDotTip,
+              config.blockchain.maxUsdcTip
+            );
+
+            if (warnings.length > 0) {
+              context.log.info(`[BOT] ⚠️ Low balance warnings found: ${warnings.length}`);
+
+              let warningMessage = "⚠️ **Low Balance Warning** ⚠️\n\n";
+              warningMessage += "The tipping bot wallet balance is running low:\n\n";
+
+              for (const warning of warnings) {
+                warningMessage += `• **${warning.asset}**: ${warning.currentBalance.toFixed(6)} ${warning.asset} ` +
+                  `(threshold: ${warning.threshold} ${warning.asset})\n`;
+              }
+
+              warningMessage += "\n💡 Please refill the wallet to continue tipping operations.";
+
+              context.log.info(`[BOT] 💬 Posting low balance warning...`);
+              await context.octokit.issues.createComment({
+                ...context.issue(),
+                body: warningMessage,
+              });
+              context.log.info(`[BOT] ✅ Low balance warning posted`);
+            } else {
+              context.log.info(`[BOT] ✅ Wallet balance is sufficient - no warnings needed`);
+            }
+          } else {
+            context.log.info(`[BOT] ❌ Balance check failed: ${balanceResult.error}`);
+          }
+        } catch (error) {
+          context.log.error(`[BOT] 💥 Balance check threw error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
       } else {
         context.log.info(`[BOT] ❌ Transaction failed! Updating initial comment...`);
         await context.octokit.issues.updateComment({
           ...context.issue(),
           comment_id: initialComment.data.id,
-          body:
-            `❌ **Transaction failed**\n` +
-            `**From**: @${author}\n` +
-            `**To**: \`${tip.recipientAddress}\`\n` +
-            `**Amount**: ${tip.amount} ${tip.asset}\n` +
-            `${tip.comment ? `**Message**: ${tip.comment}\n` : ""}` +
-            `\n**Error**: ${txResult.error}\n` +
-            `\nPlease check the configuration and try again.`,
+          body:`
+<details><summary>
+❌ <strong>Transaction failed</strong>
+</summary>
+
+**From**: @${author}
+**To**: \`${tip.recipientAddress}\`
+**Amount**: ${tip.amount} ${tip.asset}
+${tip.comment ? `**Message**: ${tip.comment}\n` : ""}
+
+**Error**:
+\`\`\`
+${txResult.error}
+\`\`\`
+
+</details>`
         });
         context.log.info(`[BOT] ✅ Error message updated - tip processing complete with failure`);
       }
