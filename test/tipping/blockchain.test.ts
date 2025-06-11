@@ -98,11 +98,11 @@ describe('Blockchain Service', () => {
   describe('sendTip', () => {
     it('should send DOT tip successfully', async () => {
       const tipCommand: TipCommand = {
-        recipientAddress: '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY',
+        recipientAddress: '12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK',
         amount: 10.5,
         asset: 'DOT',
         comment: 'Great work!',
-        rawComment: '@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 10.5 DOT Great work!',
+        rawComment: '@fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK 10.5 DOT Great work!',
       };
 
       const service = getBlockchainService();
@@ -119,10 +119,10 @@ describe('Blockchain Service', () => {
 
     it('should send USDC tip successfully', async () => {
       const tipCommand: TipCommand = {
-        recipientAddress: '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY',
+        recipientAddress: '12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK',
         amount: 25.5,
         asset: 'USDC',
-        rawComment: '@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 25.5 USDC',
+        rawComment: '@fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK 25.5 USDC',
       };
 
       const service = getBlockchainService();
@@ -141,10 +141,10 @@ describe('Blockchain Service', () => {
       // This test validates that the current implementation handles invalid seeds gracefully
       // Since we're using a simplified implementation for now, we'll test the basic error handling
       const tipCommand: TipCommand = {
-        recipientAddress: '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY',
+        recipientAddress: '12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK',
         amount: 10,
         asset: 'DOT',
-        rawComment: '@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 10 DOT',
+        rawComment: '@fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK 10 DOT',
       };
 
       const service = getBlockchainService();
@@ -158,10 +158,10 @@ describe('Blockchain Service', () => {
 
     it('should reject unsupported assets', async () => {
       const tipCommand = {
-        recipientAddress: '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY',
+        recipientAddress: '12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK',
         amount: 10,
         asset: 'BTC' as any,
-        rawComment: '@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 10 BTC',
+        rawComment: '@fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK 10 BTC',
       };
 
       const service = getBlockchainService();
@@ -177,7 +177,7 @@ describe('Blockchain Service', () => {
   describe('isValidAssetHubAddress', () => {
     it('should validate correct Asset Hub addresses', () => {
       const validAddresses = [
-        '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY',
+        '12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK',
         '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty',
         '5DAAnrj7VHTznn2AWBemMuyBwZWs6FNFjdyVXUeYum3PTXFy',
       ];
@@ -191,7 +191,7 @@ describe('Blockchain Service', () => {
       const invalidAddresses = [
         'invalid-address',
         '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNo', // too short
-        '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQYTooLong', // too long
+        '12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSKTooLong', // too long
         '0x1234567890abcdef', // hex format
         '', // empty
         '1234567890123456789012345678901234567890123456789', // numbers only
@@ -206,10 +206,10 @@ describe('Blockchain Service', () => {
   describe('estimateTransactionFee', () => {
     it('should estimate DOT transaction fee', async () => {
       const tipCommand: TipCommand = {
-        recipientAddress: '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY',
+        recipientAddress: '12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK',
         amount: 10,
         asset: 'DOT',
-        rawComment: '@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 10 DOT',
+        rawComment: '@fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK 10 DOT',
       };
 
       const fee = await estimateTransactionFee(tipCommand);
@@ -219,10 +219,10 @@ describe('Blockchain Service', () => {
 
     it('should estimate USDC transaction fee', async () => {
       const tipCommand: TipCommand = {
-        recipientAddress: '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY',
+        recipientAddress: '12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK',
         amount: 100,
         asset: 'USDC',
-        rawComment: '@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 100 USDC',
+        rawComment: '@fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK 100 USDC',
       };
 
       const fee = await estimateTransactionFee(tipCommand);
@@ -268,10 +268,10 @@ describe('Blockchain Service', () => {
   describe('amount conversion', () => {
     it('should handle decimal DOT amounts', async () => {
       const tipCommand: TipCommand = {
-        recipientAddress: '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY',
+        recipientAddress: '12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK',
         amount: 1.23456789,
         asset: 'DOT',
-        rawComment: '@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 1.23456789 DOT',
+        rawComment: '@fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK 1.23456789 DOT',
       };
 
       const service = getBlockchainService();
@@ -283,10 +283,10 @@ describe('Blockchain Service', () => {
 
     it('should handle decimal USDC amounts', async () => {
       const tipCommand: TipCommand = {
-        recipientAddress: '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY',
+        recipientAddress: '12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK',
         amount: 123.456789,
         asset: 'USDC',
-        rawComment: '@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 123.456789 USDC',
+        rawComment: '@fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK 123.456789 USDC',
       };
 
       const service = getBlockchainService();

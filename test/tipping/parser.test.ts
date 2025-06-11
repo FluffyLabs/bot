@@ -5,12 +5,12 @@ describe("CommentParser", () => {
   describe("parseComment", () => {
     it("should parse valid tip command with comment", () => {
       const comment =
-        "@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 10.5 DOT great work on the PR!";
+        "@fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK 10.5 DOT great work on the PR!";
       const result = CommentParser.parseComment(comment);
 
       expect(result.success).toBe(true);
       expect(result.tipCommand).toEqual({
-        recipientAddress: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+        recipientAddress: "12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK",
         amount: 10.5,
         asset: "DOT",
         comment: "great work on the PR!",
@@ -20,12 +20,12 @@ describe("CommentParser", () => {
 
     it("should parse valid tip command without comment", () => {
       const comment =
-        "@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 25 USDC";
+        "@fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK 25 USDC";
       const result = CommentParser.parseComment(comment);
 
       expect(result.success).toBe(true);
       expect(result.tipCommand).toEqual({
-        recipientAddress: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+        recipientAddress: "12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK",
         amount: 25,
         asset: "USDC",
         comment: undefined,
@@ -35,7 +35,7 @@ describe("CommentParser", () => {
 
     it("should handle case insensitive asset names", () => {
       const comment =
-        "@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 5 dot";
+        "@fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK 5 dot";
       const result = CommentParser.parseComment(comment);
 
       expect(result.success).toBe(true);
@@ -44,7 +44,7 @@ describe("CommentParser", () => {
 
     it("should handle extra whitespace", () => {
       const comment =
-        "  @fluffylabs-bot    tip   5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY   1.23   USDC   nice   job  ";
+        "  @fluffylabs-bot    tip   12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK   1.23   USDC   nice   job  ";
       const result = CommentParser.parseComment(comment);
 
       expect(result.success).toBe(true);
@@ -54,7 +54,7 @@ describe("CommentParser", () => {
 
     it("should fail when bot is not mentioned", () => {
       const comment =
-        "tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 10 DOT";
+        "tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK 10 DOT";
       const result = CommentParser.parseComment(comment);
 
       expect(result.success).toBe(false);
@@ -79,7 +79,7 @@ describe("CommentParser", () => {
 
     it("should fail when missing required parameters", () => {
       const comment =
-        "@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY";
+        "@fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK";
       const result = CommentParser.parseComment(comment);
 
       expect(result.success).toBe(false);
@@ -98,7 +98,7 @@ describe("CommentParser", () => {
 
     it("should fail with invalid amount - negative", () => {
       const comment =
-        "@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY -10 DOT";
+        "@fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK -10 DOT";
       const result = CommentParser.parseComment(comment);
 
       expect(result.success).toBe(false);
@@ -107,7 +107,7 @@ describe("CommentParser", () => {
 
     it("should fail with invalid amount - zero", () => {
       const comment =
-        "@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 0 DOT";
+        "@fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK 0 DOT";
       const result = CommentParser.parseComment(comment);
 
       expect(result.success).toBe(false);
@@ -116,7 +116,7 @@ describe("CommentParser", () => {
 
     it("should fail with invalid amount - non-numeric", () => {
       const comment =
-        "@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY abc DOT";
+        "@fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK abc DOT";
       const result = CommentParser.parseComment(comment);
 
       expect(result.success).toBe(false);
@@ -125,7 +125,7 @@ describe("CommentParser", () => {
 
     it("should fail with unsupported asset", () => {
       const comment =
-        "@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 10 BTC";
+        "@fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK 10 BTC";
       const result = CommentParser.parseComment(comment);
 
       expect(result.success).toBe(false);
@@ -136,7 +136,7 @@ describe("CommentParser", () => {
 
     it("should parse decimal amounts correctly", () => {
       const comment =
-        "@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 0.001 DOT";
+        "@fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK 0.001 DOT";
       const result = CommentParser.parseComment(comment);
 
       expect(result.success).toBe(true);
@@ -145,7 +145,7 @@ describe("CommentParser", () => {
 
     it("should handle bot mention in middle of comment", () => {
       const comment =
-        "Thanks for the review! @fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 5 DOT keep it up";
+        "Thanks for the review! @fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK 5 DOT keep it up";
       const result = CommentParser.parseComment(comment);
 
       expect(result.success).toBe(true);
@@ -168,8 +168,8 @@ describe("CommentParser", () => {
   describe("parseMultipleTips", () => {
     it("should parse multiple tip commands from multiline comment", () => {
       const comment = `Great work everyone!
-      @fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 10 DOT for Alice
-      @fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 5 USDC for Bob`;
+      @fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK 10 DOT for Alice
+      @fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK 5 USDC for Bob`;
 
       const results = CommentParser.parseMultipleTips(comment);
 
