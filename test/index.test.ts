@@ -126,7 +126,7 @@ const tipCommentPayload = {
     created_at: "2023-01-01T00:00:00Z",
     updated_at: "2023-01-01T00:00:00Z",
     author_association: "COLLABORATOR",
-    body: "@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 10 DOT great work!",
+    body: "@fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK 10 DOT great work!",
     reactions: {
       url: "https://api.github.com/repos/hiimbex/testing-things/issues/comments/1/reactions",
       total_count: 0,

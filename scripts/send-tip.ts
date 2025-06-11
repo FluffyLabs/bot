@@ -9,9 +9,12 @@
  * which is useful for debugging blockchain connectivity and transaction issues.
  */
 
+import { config } from 'dotenv';
 import { CommentParser } from '../src/tipping/parser.js';
 import { getBlockchainService, disconnectBlockchain } from '../src/tipping/blockchain.js';
 import { getConfig } from '../src/config.js';
+
+config();
 
 function printUsage() {
   console.log('🤖 FluffyLabs Tip CLI\n');
@@ -19,8 +22,8 @@ function printUsage() {
   console.log('  npm run send-tip "@fluffylabs-bot tip <address> <amount> <asset> [comment]"');
   console.log('');
   console.log('Examples:');
-  console.log('  npm run send-tip "@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 10 DOT great work!"');
-  console.log('  npm run send-tip "@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 100 USDC"');
+  console.log('  npm run send-tip "@fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK 10 DOT great work!"');
+  console.log('  npm run send-tip "@fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK 100 USDC"');
   console.log('');
   console.log('Environment variables required:');
   console.log('  WALLET_SEED       - Wallet seed phrase or hex');

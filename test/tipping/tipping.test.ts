@@ -31,11 +31,11 @@ describe('Tipping', () => {
       vi.mocked(CommentParser.parseComment).mockReturnValue({
         success: true,
         tipCommand: {
-          recipientAddress: '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY',
+          recipientAddress: '12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK',
           amount: 10,
           asset: 'DOT',
           comment: 'great work!',
-          rawComment: '@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 10 DOT great work!'
+          rawComment: '@fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK 10 DOT great work!'
         }
       });
 
@@ -44,7 +44,7 @@ describe('Tipping', () => {
         isAuthorized: true
       });
 
-      const result = await processTipComment(mockOctokit, '@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 10 DOT great work!', 'alice', 'fluffylabs', 'core-team', 100, 1000);
+      const result = await processTipComment(mockOctokit, '@fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK 10 DOT great work!', 'alice', 'fluffylabs', 'core-team', 100, 1000);
 
       expect(result.success).toBe(true);
       expect(result.tipCommand?.amount).toBe(10);
@@ -67,10 +67,10 @@ describe('Tipping', () => {
       vi.mocked(CommentParser.parseComment).mockReturnValue({
         success: true,
         tipCommand: {
-          recipientAddress: '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY',
+          recipientAddress: '12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK',
           amount: 10,
           asset: 'DOT',
-          rawComment: '@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 10 DOT'
+          rawComment: '@fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK 10 DOT'
         }
       });
 
@@ -79,7 +79,7 @@ describe('Tipping', () => {
         reason: 'User not a member of team'
       });
 
-      const result = await processTipComment(mockOctokit, '@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 10 DOT', 'bob', 'fluffylabs', 'core-team', 100, 1000);
+      const result = await processTipComment(mockOctokit, '@fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK 10 DOT', 'bob', 'fluffylabs', 'core-team', 100, 1000);
 
       expect(result.success).toBe(false);
       expect(result.errorMessage).toContain('Authorization failed');
@@ -89,10 +89,10 @@ describe('Tipping', () => {
       vi.mocked(CommentParser.parseComment).mockReturnValue({
         success: true,
         tipCommand: {
-          recipientAddress: '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY',
+          recipientAddress: '12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK',
           amount: 150,
           asset: 'DOT',
-          rawComment: '@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 150 DOT'
+          rawComment: '@fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK 150 DOT'
         }
       });
 
@@ -100,7 +100,7 @@ describe('Tipping', () => {
         isAuthorized: true
       });
 
-      const result = await processTipComment(mockOctokit, '@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 150 DOT', 'alice', 'fluffylabs', 'core-team', 100, 1000);
+      const result = await processTipComment(mockOctokit, '@fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK 150 DOT', 'alice', 'fluffylabs', 'core-team', 100, 1000);
 
       expect(result.success).toBe(false);
       expect(result.errorMessage).toContain('exceeds maximum of 100 DOT');

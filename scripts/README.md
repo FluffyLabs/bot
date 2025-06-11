@@ -49,11 +49,11 @@ npm run send-tip "@fluffylabs-bot tip <address> <amount> <asset> [comment]"
 
 ### Basic DOT tip
 ```bash
-npm run send-tip "@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 10 DOT"
+npm run send-tip "@fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK 10 DOT"
 ```
 ### USDC tip
 ```bash
-npm run send-tip "@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 100 USDC excellent contribution"
+npm run send-tip "@fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK 100 USDC excellent contribution"
 ```
 
 ## What the CLI Does
@@ -71,7 +71,7 @@ npm run send-tip "@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoH
 ```
 🚀 FluffyLabs Tip CLI Starting...
 
-💬 Processing command: "@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 10 DOT great work!"
+💬 Processing command: "@fluffylabs-bot tip 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK 10 DOT great work!"
 
 ⚙️ Loading configuration...
 📋 Configuration:
@@ -82,7 +82,7 @@ npm run send-tip "@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoH
 
 🧩 Parsing tip command...
 ✅ Tip command parsed successfully:
-  Recipient: 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY
+  Recipient: 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK
   Amount: 10 DOT
   Comment: great work!
 
@@ -98,7 +98,7 @@ npm run send-tip "@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoH
 ✅ Sufficient balance available
 
 📡 Sending blockchain transaction...
-Sending 10 DOT to 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY
+Sending 10 DOT to 12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK
 Message: "great work!"
 
 📊 Transaction Result:
@@ -148,7 +148,7 @@ WALLET_SEED="0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
 ## Address Format
 
 The CLI accepts Polkadot SS58 addresses (47-48 characters):
-- Example: `5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY`
+- Example: `12uGtv6u5vvUcog67hfLXqrM5anMhyoNuhtp8M1nyQtonwSK`
 
 ## Help
 

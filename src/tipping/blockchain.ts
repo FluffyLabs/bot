@@ -8,7 +8,7 @@
 
 import type { TipCommand } from "./types.js";
 import { MockAssetHubService } from "./mock-blockchain.js";
-import { sr25519PairFromSeed, mnemonicToMiniSecret, encodeAddress, sr25519Sign } from '@polkadot/util-crypto';
+import { sr25519PairFromSeed, mnemonicToMiniSecret, encodeAddress, sr25519Sign, cryptoWaitReady } from '@polkadot/util-crypto';
 import { hexToU8a, u8aToHex } from '@polkadot/util';
 import { getPolkadotSigner, type PolkadotSigner } from "@polkadot-api/signer";
 import { createClient } from "polkadot-api";
@@ -86,6 +86,7 @@ class AssetHubService implements BlockchainService {
   }
 
   private async ensureConnection(): Promise<void> {
+    await cryptoWaitReady();
     if (!this.connected) {
       console.log(`[BLOCKCHAIN] 🔌 Establishing connection to Asset Hub...`);
       console.log(`[BLOCKCHAIN] 🌐 RPC endpoint: ${this.assetHubRpc}`);
@@ -314,10 +315,10 @@ class AssetHubService implements BlockchainService {
 
   async checkBalance(): Promise<BalanceResult> {
     console.log(`[BLOCKCHAIN] 💰 Checking wallet balance...`);
-    
+
     try {
       await this.ensureConnection();
-      
+
       if (!this.api) {
         throw new Error("API not initialized");
       }
@@ -325,7 +326,7 @@ class AssetHubService implements BlockchainService {
       console.log(`[BLOCKCHAIN] 🔐 Creating signer for balance check...`);
       const signer = this.createSigner(this.walletSeed);
       const publicKey = signer.publicKey;
-      
+
       // Convert public key to address format
       console.log(`[BLOCKCHAIN] 🏠 Getting wallet address from public key...`);
       const walletAddress = encodeAddress(publicKey, 0); // Polkadot prefix

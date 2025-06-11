@@ -31,7 +31,8 @@
     "@polkadot/util": "^13.5.1",
     "@polkadot/util-crypto": "^13.5.1",
     "polkadot-api": "^1.13.1",
-    "probot": "^13.0.1"
+    "probot": "^13.0.1",
+    "dotenv": "^16.5.0"
   },
   "devDependencies": {
     "@octokit/types": "^14.1.0",
