@@ -29,19 +29,34 @@ function isTestMode(): boolean {
 
 class MockAssetHubService implements BlockchainService {
   async sendTip(tipCommand: TipCommand): Promise<TransactionResult> {
+    console.log(`[BLOCKCHAIN] 🧪 Starting mock transaction for ${tipCommand.amount} ${tipCommand.asset}`);
+    console.log(`[BLOCKCHAIN] 📋 Mock transaction details:`, {
+      recipient: tipCommand.recipientAddress,
+      amount: tipCommand.amount,
+      asset: tipCommand.asset,
+      comment: tipCommand.comment || 'none'
+    });
+    
     try {
       // Validate asset type
+      console.log(`[BLOCKCHAIN] 🔍 Validating asset: ${tipCommand.asset}`);
       if (!isSupportedAsset(tipCommand.asset)) {
+        console.log(`[BLOCKCHAIN] ❌ Unsupported asset: ${tipCommand.asset}`);
         throw new Error(`Unsupported asset: ${tipCommand.asset}`);
       }
+      console.log(`[BLOCKCHAIN] ✅ Asset validation passed`);
 
       // Validate recipient address
+      console.log(`[BLOCKCHAIN] 🏠 Validating recipient address: ${tipCommand.recipientAddress}`);
       if (!isValidAssetHubAddress(tipCommand.recipientAddress)) {
+        console.log(`[BLOCKCHAIN] ❌ Invalid recipient address: ${tipCommand.recipientAddress}`);
         throw new Error(`Invalid recipient address: ${tipCommand.recipientAddress}`);
       }
+      console.log(`[BLOCKCHAIN] ✅ Address validation passed`);
 
       // Convert amount to blockchain units for logging
       const amount = this.convertToBlockchainAmount(tipCommand.amount, tipCommand.asset);
+      console.log(`[BLOCKCHAIN] 🔢 Converted ${tipCommand.amount} ${tipCommand.asset} to ${amount} blockchain units`);
 
       console.log(`[SIMULATION] Preparing transaction for ${tipCommand.asset}`);
 
@@ -53,27 +68,41 @@ class MockAssetHubService implements BlockchainService {
       }
 
       // Generate deterministic mock transaction hashes for consistent testing
+      console.log(`[BLOCKCHAIN] 🎲 Generating mock transaction hashes...`);
       const mockTxHash = "0x" + Array.from(crypto.getRandomValues(new Uint8Array(32)))
         .map(b => b.toString(16).padStart(2, '0')).join('');
       const mockBlockHash = "0x" + Array.from(crypto.getRandomValues(new Uint8Array(32)))
         .map(b => b.toString(16).padStart(2, '0')).join('');
 
       console.log(`[SIMULATION] Transaction hash: ${mockTxHash}`);
+      console.log(`[BLOCKCHAIN] 🔗 Mock block hash: ${mockBlockHash}`);
 
       // Simulate network delay for realistic testing
+      console.log(`[BLOCKCHAIN] ⏳ Simulating network delay...`);
       await new Promise(resolve => setTimeout(resolve, 100));
+      console.log(`[BLOCKCHAIN] ✅ Mock transaction simulation complete`);
 
-      return {
+      const result = {
         success: true,
         transactionHash: mockTxHash,
         blockHash: mockBlockHash,
         explorerUrl: this.getExplorerUrl(mockTxHash),
       };
 
+      console.log(`[BLOCKCHAIN] 🎉 Mock transaction successful!`, {
+        txHash: result.transactionHash,
+        blockHash: result.blockHash,
+        explorerUrl: result.explorerUrl
+      });
+
+      return result;
+
     } catch (error) {
+      const errorMessage = `Blockchain transaction failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      console.log(`[BLOCKCHAIN] 💥 Mock transaction failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return {
         success: false,
-        error: `Blockchain transaction failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error: errorMessage,
       };
     }
   }
@@ -117,26 +146,41 @@ class AssetHubService implements BlockchainService {
 
   private async ensureConnection(): Promise<void> {
     if (!this.connected) {
+      console.log(`[BLOCKCHAIN] 🔌 Establishing connection to Asset Hub...`);
+      console.log(`[BLOCKCHAIN] 🌐 RPC endpoint: ${this.assetHubRpc}`);
+      
       try {
         // Dynamic imports for polkadot-api modules
+        console.log(`[BLOCKCHAIN] 📦 Loading polkadot-api modules...`);
         const { createClient } = await import("polkadot-api");
         const { getWsProvider } = await import("polkadot-api/ws-provider/node");
         const { asset_hub } = await import("@polkadot-api/descriptors");
+        console.log(`[BLOCKCHAIN] ✅ Polkadot-api modules loaded`);
 
         // Create WebSocket provider
+        console.log(`[BLOCKCHAIN] 🔗 Creating WebSocket provider...`);
         this.provider = getWsProvider(this.assetHubRpc);
+        console.log(`[BLOCKCHAIN] ✅ WebSocket provider created`);
 
         // Create client
+        console.log(`[BLOCKCHAIN] 🏗️ Creating polkadot-api client...`);
         this.client = createClient(this.provider);
+        console.log(`[BLOCKCHAIN] ✅ Client created`);
 
         // Get typed API for Asset Hub
+        console.log(`[BLOCKCHAIN] 🔧 Getting typed API for Asset Hub...`);
         this.api = this.client.getTypedApi(asset_hub);
+        console.log(`[BLOCKCHAIN] ✅ Typed API initialized`);
 
         this.connected = true;
-        console.log(`Connected to Asset Hub at ${this.assetHubRpc}`);
+        console.log(`[BLOCKCHAIN] 🎉 Successfully connected to Asset Hub at ${this.assetHubRpc}`);
       } catch (error) {
-        throw new Error(`Failed to connect to Asset Hub: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        const errorMessage = `Failed to connect to Asset Hub: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        console.log(`[BLOCKCHAIN] 💥 Connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        throw new Error(errorMessage);
       }
+    } else {
+      console.log(`[BLOCKCHAIN] ✅ Already connected to Asset Hub`);
     }
   }
 
@@ -195,33 +239,54 @@ class AssetHubService implements BlockchainService {
   }
 
   async sendTip(tipCommand: TipCommand): Promise<TransactionResult> {
+    console.log(`[BLOCKCHAIN] 🚀 Starting real blockchain transaction for ${tipCommand.amount} ${tipCommand.asset}`);
+    console.log(`[BLOCKCHAIN] 📋 Transaction details:`, {
+      recipient: tipCommand.recipientAddress,
+      amount: tipCommand.amount,
+      asset: tipCommand.asset,
+      comment: tipCommand.comment || 'none'
+    });
+    
     try {
+      console.log(`[BLOCKCHAIN] 🔌 Ensuring blockchain connection...`);
       await this.ensureConnection();
 
+      console.log(`[BLOCKCHAIN] 🔐 Creating transaction signer...`);
       const signer = await this.createSigner(this.walletSeed);
+      console.log(`[BLOCKCHAIN] ✅ Signer created successfully`);
 
       // Convert amount to the smallest unit
+      console.log(`[BLOCKCHAIN] 🔢 Converting ${tipCommand.amount} ${tipCommand.asset} to blockchain units...`);
       const amount = this.convertToBlockchainAmount(tipCommand.amount, tipCommand.asset);
+      console.log(`[BLOCKCHAIN] ✅ Converted to ${amount} blockchain units`);
 
       // Validate recipient address
+      console.log(`[BLOCKCHAIN] 🏠 Validating recipient address: ${tipCommand.recipientAddress}`);
       if (!isValidAssetHubAddress(tipCommand.recipientAddress)) {
+        console.log(`[BLOCKCHAIN] ❌ Invalid recipient address: ${tipCommand.recipientAddress}`);
         throw new Error(`Invalid recipient address: ${tipCommand.recipientAddress}`);
       }
+      console.log(`[BLOCKCHAIN] ✅ Address validation passed`);
 
       // Dynamic import for MultiAddress
+      console.log(`[BLOCKCHAIN] 📦 Loading MultiAddress type...`);
       const { MultiAddress } = await import("@polkadot-api/descriptors");
+      console.log(`[BLOCKCHAIN] ✅ MultiAddress loaded`);
 
       let transaction;
 
       if (tipCommand.asset === "DOT") {
+        console.log(`[BLOCKCHAIN] 💎 Creating DOT transfer transaction using Balances pallet...`);
         // Create DOT transfer transaction using Balances pallet
         transaction = this.api.tx.Balances.transfer_keep_alive({
           dest: MultiAddress.Id(tipCommand.recipientAddress),
           value: amount,
         });
+        console.log(`[BLOCKCHAIN] ✅ DOT transaction created`);
       } else if (tipCommand.asset === "USDC") {
         // USDC Asset ID on Asset Hub Polkadot (this may need to be updated)
         const usdcAssetId = 1337;
+        console.log(`[BLOCKCHAIN] 🪙 Creating USDC transfer transaction using Assets pallet (asset ID: ${usdcAssetId})...`);
 
         // Create USDC transfer transaction using Assets pallet
         transaction = this.api.tx.Assets.transfer_keep_alive({
@@ -229,10 +294,13 @@ class AssetHubService implements BlockchainService {
           target: MultiAddress.Id(tipCommand.recipientAddress),
           amount: amount,
         });
+        console.log(`[BLOCKCHAIN] ✅ USDC transaction created`);
       } else {
+        console.log(`[BLOCKCHAIN] ❌ Unsupported asset: ${tipCommand.asset}`);
         throw new Error(`Unsupported asset: ${tipCommand.asset}`);
       }
 
+      console.log(`[BLOCKCHAIN] 📡 Signing and submitting transaction...`);
       console.log(`Sending ${tipCommand.amount} ${tipCommand.asset} to ${tipCommand.recipientAddress}`);
 
       // Sign and submit transaction with monitoring
@@ -240,42 +308,50 @@ class AssetHubService implements BlockchainService {
         let txHash: string;
         let blockHash: string;
 
+        console.log(`[BLOCKCHAIN] 👀 Starting transaction monitoring...`);
         transaction.signSubmitAndWatch(signer).subscribe({
           next: (event: any) => {
-            console.log(`Transaction event: ${event.type}`);
+            console.log(`[BLOCKCHAIN] 📡 Transaction event: ${event.type}`);
 
             if (event.type === "txBestBlocksState") {
               txHash = event.txHash;
-              console.log(`Transaction included in best block: ${txHash}`);
+              console.log(`[BLOCKCHAIN] 🏆 Transaction included in best block: ${txHash}`);
             } else if (event.type === "finalized") {
               blockHash = event.blockHash;
-              console.log(`Transaction finalized in block: ${blockHash}`);
+              console.log(`[BLOCKCHAIN] 🎯 Transaction finalized in block: ${blockHash}`);
             }
           },
           error: (error: any) => {
-            console.error('Transaction error:', error);
+            console.error('[BLOCKCHAIN] 💥 Transaction error:', error);
             reject({
               success: false,
               error: `Transaction failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
             });
           },
           complete: () => {
-            console.log('Transaction completed successfully');
-            resolve({
+            console.log('[BLOCKCHAIN] 🎉 Transaction completed successfully!');
+            const result = {
               success: true,
               transactionHash: txHash,
               blockHash: blockHash,
               explorerUrl: this.getExplorerUrl(txHash),
+            };
+            console.log(`[BLOCKCHAIN] 📊 Final transaction result:`, {
+              txHash: result.transactionHash,
+              blockHash: result.blockHash,
+              explorerUrl: result.explorerUrl
             });
+            resolve(result);
           }
         });
       });
 
     } catch (error) {
-      console.error('Blockchain transaction error:', error);
+      const errorMessage = `Blockchain transaction failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      console.error('[BLOCKCHAIN] 💥 Blockchain transaction error:', error);
       return {
         success: false,
-        error: `Blockchain transaction failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error: errorMessage,
       };
     }
   }
@@ -319,21 +395,33 @@ let blockchainService: BlockchainService | null = null;
 export function getBlockchainService(walletSeed?: string, assetHubRpc?: string): BlockchainService {
   if (!blockchainService) {
     if (isTestMode()) {
+      console.log(`[BLOCKCHAIN] 🧪 Initializing mock blockchain service for testing`);
       blockchainService = new MockAssetHubService();
+      console.log(`[BLOCKCHAIN] ✅ Mock blockchain service initialized`);
     } else {
+      console.log(`[BLOCKCHAIN] 🏭 Initializing production blockchain service`);
       if (!walletSeed || !assetHubRpc) {
+        console.log(`[BLOCKCHAIN] ❌ Missing required parameters for production service`);
         throw new Error('walletSeed and assetHubRpc are required for production blockchain service');
       }
+      console.log(`[BLOCKCHAIN] 🔧 Creating AssetHubService with RPC: ${assetHubRpc}`);
       blockchainService = new AssetHubService(walletSeed, assetHubRpc);
+      console.log(`[BLOCKCHAIN] ✅ Production blockchain service initialized`);
     }
+  } else {
+    console.log(`[BLOCKCHAIN] ♻️ Reusing existing blockchain service instance`);
   }
   return blockchainService;
 }
 
 export async function disconnectBlockchain(): Promise<void> {
   if (blockchainService) {
+    console.log(`[BLOCKCHAIN] 🔌 Disconnecting blockchain service...`);
     await blockchainService.disconnect();
     blockchainService = null;
+    console.log(`[BLOCKCHAIN] ✅ Blockchain service disconnected and reset`);
+  } else {
+    console.log(`[BLOCKCHAIN] ℹ️ No blockchain service to disconnect`);
   }
 }
 

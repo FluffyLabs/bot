@@ -10,15 +10,24 @@ export async function checkAuthorization(
   org: string,
   team: string,
 ): Promise<AuthorizationResult> {
+  console.log(`[AUTH] 🔐 Checking authorization for @${username} in ${org}/${team}`);
+  
   try {
+    console.log(`[AUTH] 👥 Checking membership...`);
     const membershipResult = await checkMembership(
       octokit,
       org,
       team,
       username,
     );
+    console.log(`[AUTH] 📊 Membership check result:`, { 
+      isMember: membershipResult.isMember, 
+      state: membershipResult.state,
+      error: membershipResult.error 
+    });
 
     if (membershipResult.isMember) {
+      console.log(`[AUTH] ✅ User @${username} is authorized (active member)`);
       return {
         isAuthorized: true,
         membershipDetails: membershipResult,
@@ -30,8 +39,12 @@ export async function checkAuthorization(
 
     if (membershipResult.error) {
       reason = membershipResult.error;
+      console.log(`[AUTH] ❌ Authorization failed due to error: ${reason}`);
     } else if (membershipResult.state === "pending") {
       reason = `User '${username}' has a pending invitation to team '${team}'`;
+      console.log(`[AUTH] ⏳ Authorization failed - pending invitation: ${reason}`);
+    } else {
+      console.log(`[AUTH] ❌ Authorization failed - not a member: ${reason}`);
     }
 
     return {
@@ -40,12 +53,14 @@ export async function checkAuthorization(
       membershipDetails: membershipResult,
     };
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    console.log(`[AUTH] 💥 Authorization check threw error: ${errorMessage}`);
     return {
       isAuthorized: false,
-      reason: `Failed to check authorization: ${error instanceof Error ? error.message : "Unknown error"}`,
+      reason: `Failed to check authorization: ${errorMessage}`,
       membershipDetails: {
         isMember: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: errorMessage,
       },
     };
   }
@@ -60,6 +75,8 @@ export async function canUserTip(
   org: string,
   team: string,
 ): Promise<boolean> {
+  console.log(`[AUTH] 🤔 Simple authorization check for @${username}`);
   const result = await checkAuthorization(octokit, username, org, team);
+  console.log(`[AUTH] 🎯 Simple authorization result: ${result.isAuthorized ? 'AUTHORIZED' : 'NOT AUTHORIZED'}`);
   return result.isAuthorized;
 }

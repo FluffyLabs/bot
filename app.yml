@@ -26,8 +26,8 @@ default_events:
   # - issues
   # - label
   # - milestone
-  # - member
-  # - membership
+  - member
+  - membership
   # - org_block
   # - organization
   # - page_build

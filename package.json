@@ -13,7 +13,9 @@
   ],
   "scripts": {
     "build": "tsc",
-    "start": "probot run ./lib/index.js",
+    "prestart": "npm run build",
+    "start": "probot run ./lib/src/index.js",
+    "dev": "npm run build && npm start",
     "test": "vitest --run",
     "test-watch": "vitest"
   },
