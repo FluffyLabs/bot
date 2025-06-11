@@ -23,8 +23,14 @@ vi.mock("../src/tipping/blockchain.js", () => ({
       blockHash: "0xabcdef1234567890",
       explorerUrl: "https://assethub-polkadot.subscan.io/extrinsic/0x1234567890abcdef",
     }),
+    checkBalance: vi.fn().mockResolvedValue({
+      dotBalance: BigInt(1000 * 10_000_000_000), // 1000 DOT - sufficient balance
+      usdcBalance: BigInt(5000 * 1_000_000), // 5000 USDC - sufficient balance  
+      success: true,
+    }),
     disconnect: vi.fn().mockResolvedValue(undefined),
   })),
+  checkBalanceWarnings: vi.fn().mockReturnValue([]), // No warnings for sufficient balance
   disconnectBlockchain: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -288,6 +294,9 @@ describe("Tipping Bot E2E", () => {
     process.env.MAX_USDC_TIP = "1000";
     process.env.ASSET_HUB_RPC = "wss://test-rpc.example.com";
     
+    // Reset all mocks
+    vi.clearAllMocks();
+    
     probot = new Probot({
       appId: 123,
       privateKey,
@@ -444,6 +453,24 @@ describe("Tipping Bot E2E", () => {
     } as any);
 
     // Verify no API calls were made
+    expect(mock.pendingMocks()).toStrictEqual([]);
+  });
+
+  test("handles balance check after successful tip", async () => {
+    const mock = nock("https://api.github.com")
+      .post("/app/installations/2/access_tokens")
+      .reply(200, { token: "test", permissions: { issues: "write" } })
+      .get("/orgs/fluffylabs/teams/core-team/memberships/alice")
+      .reply(200, { state: "active" })
+      .post("/repos/hiimbex/testing-things/issues/comments/1/reactions")
+      .reply(200)
+      .post("/repos/hiimbex/testing-things/issues/1/comments")
+      .reply(200, { id: 123 })
+      .patch("/repos/hiimbex/testing-things/issues/comments/123")
+      .reply(200);
+
+    await probot.receive({ name: "issue_comment", payload: tipCommentPayload, id: "12349" } as any);
+
     expect(mock.pendingMocks()).toStrictEqual([]);
   });
 

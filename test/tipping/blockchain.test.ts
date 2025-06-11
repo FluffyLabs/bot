@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { getBlockchainService, disconnectBlockchain, isValidAssetHubAddress, estimateTransactionFee } from '../../src/tipping/blockchain.js';
+import { getBlockchainService, disconnectBlockchain, isValidAssetHubAddress, estimateTransactionFee, checkBalanceWarnings, type BalanceResult } from '../../src/tipping/blockchain.js';
 import type { TipCommand } from '../../src/tipping/types.js';
 
 // Mock crypto.getRandomValues for consistent test results
@@ -231,6 +231,30 @@ describe('Blockchain Service', () => {
     });
   });
 
+  describe('checkBalance', () => {
+    it('should check wallet balance successfully', async () => {
+      const service = getBlockchainService();
+      const result = await service.checkBalance();
+
+      expect(result.success).toBe(true);
+      expect(typeof result.dotBalance).toBe('bigint');
+      expect(typeof result.usdcBalance).toBe('bigint');
+      expect(result.dotBalance).toBeGreaterThan(0n);
+      expect(result.usdcBalance).toBeGreaterThan(0n);
+      expect(result.error).toBeUndefined();
+    });
+
+    it('should return mock balances in test mode', async () => {
+      const service = getBlockchainService();
+      const result = await service.checkBalance();
+
+      expect(result.success).toBe(true);
+      // Mock service returns 1000 DOT and 5000 USDC
+      expect(result.dotBalance).toBe(BigInt(1000 * 10_000_000_000));
+      expect(result.usdcBalance).toBe(BigInt(5000 * 1_000_000));
+    });
+  });
+
   describe('disconnect', () => {
     it('should disconnect the blockchain service', async () => {
       const service = getBlockchainService();
@@ -270,6 +294,79 @@ describe('Blockchain Service', () => {
 
       expect(result.success).toBe(true);
       expect(result.transactionHash).toBeDefined();
+    });
+  });
+
+  describe('checkBalanceWarnings', () => {
+    it('should return no warnings when balance is sufficient', () => {
+      const balanceResult: BalanceResult = {
+        dotBalance: BigInt(1000 * 10_000_000_000), // 1000 DOT
+        usdcBalance: BigInt(5000 * 1_000_000), // 5000 USDC
+        success: true,
+      };
+
+      const warnings = checkBalanceWarnings(balanceResult, 10, 100); // max 10 DOT, 100 USDC
+
+      expect(warnings).toHaveLength(0);
+    });
+
+    it('should return DOT warning when balance is low', () => {
+      const balanceResult: BalanceResult = {
+        dotBalance: BigInt(50 * 10_000_000_000), // 50 DOT
+        usdcBalance: BigInt(5000 * 1_000_000), // 5000 USDC
+        success: true,
+      };
+
+      const warnings = checkBalanceWarnings(balanceResult, 10, 100); // threshold: 100 DOT, 1000 USDC
+
+      expect(warnings).toHaveLength(1);
+      expect(warnings[0].asset).toBe('DOT');
+      expect(warnings[0].currentBalance).toBe(50);
+      expect(warnings[0].threshold).toBe(100);
+      expect(warnings[0].maxTipAmount).toBe(10);
+    });
+
+    it('should return USDC warning when balance is low', () => {
+      const balanceResult: BalanceResult = {
+        dotBalance: BigInt(1000 * 10_000_000_000), // 1000 DOT
+        usdcBalance: BigInt(50 * 1_000_000), // 50 USDC
+        success: true,
+      };
+
+      const warnings = checkBalanceWarnings(balanceResult, 10, 100); // threshold: 100 DOT, 1000 USDC
+
+      expect(warnings).toHaveLength(1);
+      expect(warnings[0].asset).toBe('USDC');
+      expect(warnings[0].currentBalance).toBe(50);
+      expect(warnings[0].threshold).toBe(1000);
+      expect(warnings[0].maxTipAmount).toBe(100);
+    });
+
+    it('should return both warnings when both balances are low', () => {
+      const balanceResult: BalanceResult = {
+        dotBalance: BigInt(5 * 10_000_000_000), // 5 DOT
+        usdcBalance: BigInt(50 * 1_000_000), // 50 USDC
+        success: true,
+      };
+
+      const warnings = checkBalanceWarnings(balanceResult, 10, 100); // threshold: 100 DOT, 1000 USDC
+
+      expect(warnings).toHaveLength(2);
+      expect(warnings.find(w => w.asset === 'DOT')).toBeDefined();
+      expect(warnings.find(w => w.asset === 'USDC')).toBeDefined();
+    });
+
+    it('should return no warnings when balance check failed', () => {
+      const balanceResult: BalanceResult = {
+        dotBalance: 0n,
+        usdcBalance: 0n,
+        success: false,
+        error: 'Failed to check balance',
+      };
+
+      const warnings = checkBalanceWarnings(balanceResult, 10, 100);
+
+      expect(warnings).toHaveLength(0);
     });
   });
 });
