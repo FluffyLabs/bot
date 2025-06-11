@@ -17,7 +17,9 @@
     "start": "probot run ./lib/src/index.js",
     "dev": "npm run build && npm start",
     "test": "vitest --run",
-    "test-watch": "vitest"
+    "test-watch": "vitest",
+    "lint": "tsc --noEmit",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@polkadot-api/descriptors": "file:.papi/descriptors",
