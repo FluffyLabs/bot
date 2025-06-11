@@ -8,11 +8,23 @@
 
 import type { TipCommand } from "./types.js";
 import { MockAssetHubService } from "./mock-blockchain.js";
-import { sr25519PairFromSeed, mnemonicToMiniSecret } from '@polkadot/util-crypto';
+import { sr25519PairFromSeed, mnemonicToMiniSecret, encodeAddress, sr25519Sign } from '@polkadot/util-crypto';
 import { hexToU8a, u8aToHex } from '@polkadot/util';
 import { getPolkadotSigner, type PolkadotSigner } from "@polkadot-api/signer";
+import { createClient } from "polkadot-api";
+import { getWsProvider } from "polkadot-api/ws-provider/node";
 import type { PolkadotClient, TypedApi, TxEvent } from "polkadot-api";
 import { asset_hub, MultiAddress } from "@polkadot-api/descriptors";
+
+interface Transaction {
+  signSubmitAndWatch(signer: PolkadotSigner): {
+    subscribe(observer: {
+      next: (event: TxEvent) => void;
+      error: (error: Error) => void;
+      complete: () => void;
+    }): void;
+  };
+}
 
 export interface TransactionResult {
   success: boolean;
@@ -79,12 +91,6 @@ class AssetHubService implements BlockchainService {
       console.log(`[BLOCKCHAIN] 🌐 RPC endpoint: ${this.assetHubRpc}`);
 
       try {
-        // Dynamic imports for polkadot-api modules
-        console.log(`[BLOCKCHAIN] 📦 Loading polkadot-api modules...`);
-        const { createClient } = await import("polkadot-api");
-        const { getWsProvider } = await import("polkadot-api/ws-provider/node");
-        console.log(`[BLOCKCHAIN] ✅ Polkadot-api modules loaded`);
-
         // Create WebSocket provider
         console.log(`[BLOCKCHAIN] 🔗 Creating WebSocket provider...`);
         this.provider = getWsProvider(this.assetHubRpc);
@@ -151,8 +157,7 @@ class AssetHubService implements BlockchainService {
         "Sr25519",
         async (signingPayload: Uint8Array) => {
           console.log(`[BLOCKCHAIN] ✍️ Signing transaction...`);
-          const { ed25519Sign } = await import('@polkadot/util-crypto');
-          const signature = ed25519Sign(signingPayload, { publicKey, secretKey });
+          const signature = sr25519Sign(signingPayload, { publicKey, secretKey });
           console.log(`[BLOCKCHAIN] ✅ Transaction signed`);
           return signature;
         }
@@ -166,6 +171,50 @@ class AssetHubService implements BlockchainService {
 
   private getExplorerUrl(transactionHash: string): string {
     return `https://assethub-polkadot.subscan.io/extrinsic/${transactionHash}`;
+  }
+
+  private async submitAndMonitorTransaction(transaction: Transaction, signer: PolkadotSigner): Promise<TransactionResult> {
+    return new Promise((resolve) => {
+      console.log(`[BLOCKCHAIN] 👀 Starting transaction submission...`);
+
+      // Submit the signed transaction and monitor status
+      transaction.signSubmitAndWatch(signer)
+        .subscribe({
+          next: (event: TxEvent) => {
+            console.log(`[BLOCKCHAIN] 📡 Transaction event:`, event.type);
+
+            if (event.type === "txBestBlocksState") {
+              console.log(`[BLOCKCHAIN] 🏆 Transaction in best block. Hash: ${event.txHash}`);
+            } else if (event.type === "finalized") {
+              console.log(`[BLOCKCHAIN] 🎯 Transaction finalized in block: ${event.block.hash}`);
+
+              const finalResult = {
+                success: true,
+                transactionHash: event.txHash,
+                blockHash: event.block.hash,
+                explorerUrl: this.getExplorerUrl(event.txHash),
+              };
+              console.log(`[BLOCKCHAIN] 📊 Final transaction result:`, {
+                txHash: finalResult.transactionHash,
+                blockHash: finalResult.blockHash,
+                explorerUrl: finalResult.explorerUrl
+              });
+
+              resolve(finalResult);
+            }
+          },
+          error: (error: Error) => {
+            console.error('[BLOCKCHAIN] 💥 Transaction error:', error);
+            resolve({
+              success: false,
+              error: `Transaction failed: ${error.message}`,
+            });
+          },
+          complete: () => {
+            console.log('[BLOCKCHAIN] ✅ Transaction monitoring complete');
+          }
+        });
+    });
   }
 
   async sendTip(tipCommand: TipCommand): Promise<TransactionResult> {
@@ -215,48 +264,7 @@ class AssetHubService implements BlockchainService {
         });
         console.log(`[BLOCKCHAIN] ✅ DOT transaction created`);
 
-        // Sign and submit transaction with monitoring
-        return new Promise((resolve) => {
-          console.log(`[BLOCKCHAIN] 👀 Starting transaction submission...`);
-
-          // Submit the signed transaction and monitor status
-          transaction.signSubmitAndWatch(signer)
-            .subscribe({
-              next: (event: TxEvent) => {
-                console.log(`[BLOCKCHAIN] 📡 Transaction event:`, event.type);
-
-                if (event.type === "txBestBlocksState") {
-                  console.log(`[BLOCKCHAIN] 🏆 Transaction in best block. Hash: ${event.txHash}`);
-                } else if (event.type === "finalized") {
-                  console.log(`[BLOCKCHAIN] 🎯 Transaction finalized in block: ${event.block.hash}`);
-
-                  const finalResult = {
-                    success: true,
-                    transactionHash: event.txHash,
-                    blockHash: event.block.hash,
-                    explorerUrl: this.getExplorerUrl(event.txHash),
-                  };
-                  console.log(`[BLOCKCHAIN] 📊 Final transaction result:`, {
-                    txHash: finalResult.transactionHash,
-                    blockHash: finalResult.blockHash,
-                    explorerUrl: finalResult.explorerUrl
-                  });
-
-                  resolve(finalResult);
-                }
-              },
-              error: (error: Error) => {
-                console.error('[BLOCKCHAIN] 💥 Transaction error:', error);
-                resolve({
-                  success: false,
-                  error: `Transaction failed: ${error.message}`,
-                });
-              },
-              complete: () => {
-                console.log('[BLOCKCHAIN] ✅ Transaction monitoring complete');
-              }
-            });
-        });
+        return this.submitAndMonitorTransaction(transaction, signer);
 
       } else if (tipCommand.asset === "USDC") {
         // USDC Asset ID on Asset Hub Polkadot (this may need to be updated)
@@ -275,48 +283,7 @@ class AssetHubService implements BlockchainService {
         });
         console.log(`[BLOCKCHAIN] ✅ USDC transaction created`);
 
-        // Sign and submit transaction with monitoring
-        return new Promise((resolve) => {
-          console.log(`[BLOCKCHAIN] 👀 Starting transaction submission...`);
-
-          // Submit the signed transaction and monitor status
-          transaction.signSubmitAndWatch(signer)
-            .subscribe({
-              next: (event: TxEvent) => {
-                console.log(`[BLOCKCHAIN] 📡 Transaction event:`, event.type);
-
-                if (event.type === "txBestBlocksState") {
-                  console.log(`[BLOCKCHAIN] 🏆 Transaction in best block. Hash: ${event.txHash}`);
-                } else if (event.type === "finalized") {
-                  console.log(`[BLOCKCHAIN] 🎯 Transaction finalized in block: ${event.block.hash}`);
-
-                  const finalResult = {
-                    success: true,
-                    transactionHash: event.txHash,
-                    blockHash: event.block.hash,
-                    explorerUrl: this.getExplorerUrl(event.txHash),
-                  };
-                  console.log(`[BLOCKCHAIN] 📊 Final transaction result:`, {
-                    txHash: finalResult.transactionHash,
-                    blockHash: finalResult.blockHash,
-                    explorerUrl: finalResult.explorerUrl
-                  });
-
-                  resolve(finalResult);
-                }
-              },
-              error: (error: Error) => {
-                console.error('[BLOCKCHAIN] 💥 Transaction error:', error);
-                resolve({
-                  success: false,
-                  error: `Transaction failed: ${error.message}`,
-                });
-              },
-              complete: () => {
-                console.log('[BLOCKCHAIN] ✅ Transaction monitoring complete');
-              }
-            });
-        });
+        return this.submitAndMonitorTransaction(transaction, signer);
 
       } else {
         console.log(`[BLOCKCHAIN] ❌ Unsupported asset: ${tipCommand.asset}`);
@@ -361,7 +328,6 @@ class AssetHubService implements BlockchainService {
       
       // Convert public key to address format
       console.log(`[BLOCKCHAIN] 🏠 Getting wallet address from public key...`);
-      const { encodeAddress } = await import('@polkadot/util-crypto');
       const walletAddress = encodeAddress(publicKey, 0); // Polkadot prefix
       console.log(`[BLOCKCHAIN] 📍 Wallet address: ${walletAddress}`);
 
