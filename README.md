@@ -54,6 +54,8 @@ MAX_USDC_TIP=1000
 
 ```sh
 npm test
+npm run test-watch  # Watch mode
+npm run lint        # Type checking
 ```
 
 ### Docker
@@ -62,6 +64,20 @@ npm test
 docker build -t fluffylabs-bot .
 docker run --env-file .env fluffylabs-bot
 ```
+
+### CI/CD
+
+The project uses GitHub Actions for continuous integration and deployment:
+
+- **CI Pipeline**: Runs tests, linting, security audits on Node.js 18.x, 20.x, 22.x
+- **Docker Build**: Validates Docker image builds
+- **Security**: Automated dependency vulnerability scanning
+- **Deployment**: Automated Docker image publishing to GitHub Container Registry on releases
+- **Dependencies**: Automated dependency updates via Dependabot
+
+Workflows:
+- `.github/workflows/ci.yml` - Main CI pipeline
+- `.github/workflows/deploy.yml` - Release deployment
 
 ## How It Works
 
