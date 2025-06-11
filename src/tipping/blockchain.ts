@@ -8,6 +8,8 @@
 
 import { isSupportedAsset } from "../config.js";
 import type { TipCommand } from "./types.js";
+import { ed25519PairFromSeed, mnemonicToMiniSecret, ed25519Sign } from '@polkadot/util-crypto';
+import { hexToU8a, u8aToHex } from '@polkadot/util';
 
 export interface TransactionResult {
   success: boolean;
@@ -20,6 +22,19 @@ export interface TransactionResult {
 export interface BlockchainService {
   sendTip(tipCommand: TipCommand): Promise<TransactionResult>;
   disconnect(): Promise<void>;
+}
+
+class MySigner {
+  publicKey: Uint8Array;
+
+  constructor(publicKey: Uint8Array, private secretKey: Uint8Array) {
+    this.publicKey = publicKey;
+  }
+
+  async sign(payload: Uint8Array): Promise<Uint8Array> {
+    const keypair = { publicKey: this.publicKey, secretKey: this.secretKey };
+    return ed25519Sign(payload, keypair);
+  }
 }
 
 // Check if we're in test mode
@@ -36,7 +51,7 @@ class MockAssetHubService implements BlockchainService {
       asset: tipCommand.asset,
       comment: tipCommand.comment || 'none'
     });
-    
+
     try {
       // Validate asset type
       console.log(`[BLOCKCHAIN] 🔍 Validating asset: ${tipCommand.asset}`);
@@ -148,7 +163,7 @@ class AssetHubService implements BlockchainService {
     if (!this.connected) {
       console.log(`[BLOCKCHAIN] 🔌 Establishing connection to Asset Hub...`);
       console.log(`[BLOCKCHAIN] 🌐 RPC endpoint: ${this.assetHubRpc}`);
-      
+
       try {
         // Dynamic imports for polkadot-api modules
         console.log(`[BLOCKCHAIN] 📦 Loading polkadot-api modules...`);
@@ -186,7 +201,7 @@ class AssetHubService implements BlockchainService {
 
   private async createSigner(seed: string) {
     try {
-      const { getPolkadotSigner } = await import("polkadot-api/signer");
+      console.log(`[BLOCKCHAIN] 🔑 Creating Ed25519 signer from seed...`);
 
       let seedBytes: Uint8Array;
 
@@ -196,39 +211,35 @@ class AssetHubService implements BlockchainService {
         if (hexString.length !== 64) {
           throw new Error("Hex seed must be 32 bytes (64 hex characters)");
         }
-        seedBytes = new Uint8Array(hexString.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
+        seedBytes = hexToU8a(seed);
+        console.log(`[BLOCKCHAIN] 🔧 Using hex seed`);
       } else {
-        // Mnemonic - convert to seed using simple derivation
-        // Note: In production, use proper BIP39 mnemonic to seed derivation
-        const encoder = new TextEncoder();
-        const data = encoder.encode(seed);
-
-        // Simple seed derivation for development
-        seedBytes = new Uint8Array(32);
-        for (let i = 0; i < 32; i++) {
-          seedBytes[i] = data[i % data.length] ^ (i * 7);
-        }
+        // Mnemonic - convert to mini secret using proper BIP39 derivation
+        console.log(`[BLOCKCHAIN] 🔧 Converting mnemonic to seed...`);
+        seedBytes = mnemonicToMiniSecret(seed);
       }
 
       if (seedBytes.length !== 32) {
         throw new Error("Seed must be 32 bytes long");
       }
 
-      // Create a simple Sr25519 signer for polkadot-api
-      // In production, you would use @polkadot-labs/hdkd or similar for proper key derivation
-      return getPolkadotSigner(
-        seedBytes, // publicKey (simplified for demo)
-        "Sr25519",
-        async (data: Uint8Array) => {
-          // Simplified signing - in production use proper Sr25519 signing
-          const signature = new Uint8Array(64);
-          // Fill with deterministic data based on seed and message
-          for (let i = 0; i < 64; i++) {
-            signature[i] = (seedBytes[i % 32] + data[i % data.length]) % 256;
-          }
-          return signature;
-        }
-      );
+      // Generate Ed25519 keypair from seed
+      console.log(`[BLOCKCHAIN] 🔐 Generating Ed25519 keypair...`);
+      const keyPair = ed25519PairFromSeed(seedBytes);
+      const publicKey = keyPair.publicKey;
+      const secretKey = keyPair.secretKey;
+
+      console.log(`[BLOCKCHAIN] ✅ Ed25519 keypair generated`);
+      console.log(`[BLOCKCHAIN] 🔑 Public key: ${u8aToHex(publicKey)}`);
+
+      // Create MySigner instance
+      const mySigner = new MySigner(publicKey, secretKey);
+
+      // Return account ID (public key) and signer for use with signAndSend
+      return {
+        accountId: publicKey,
+        signer: mySigner
+      };
     } catch (error) {
       throw new Error(`Failed to create signer from seed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -246,13 +257,13 @@ class AssetHubService implements BlockchainService {
       asset: tipCommand.asset,
       comment: tipCommand.comment || 'none'
     });
-    
+
     try {
       console.log(`[BLOCKCHAIN] 🔌 Ensuring blockchain connection...`);
       await this.ensureConnection();
 
       console.log(`[BLOCKCHAIN] 🔐 Creating transaction signer...`);
-      const signer = await this.createSigner(this.walletSeed);
+      const { accountId, signer } = await this.createSigner(this.walletSeed);
       console.log(`[BLOCKCHAIN] ✅ Signer created successfully`);
 
       // Convert amount to the smallest unit
@@ -309,40 +320,45 @@ class AssetHubService implements BlockchainService {
         let blockHash: string;
 
         console.log(`[BLOCKCHAIN] 👀 Starting transaction monitoring...`);
-        transaction.signSubmitAndWatch(signer).subscribe({
-          next: (event: any) => {
-            console.log(`[BLOCKCHAIN] 📡 Transaction event: ${event.type}`);
+        
+        // Use signAndSend with the Ed25519 signer
+        transaction.signAndSend(accountId, { signer }, (result: any) => {
+          console.log(`[BLOCKCHAIN] 📡 Transaction status:`, result.status.type);
 
-            if (event.type === "txBestBlocksState") {
-              txHash = event.txHash;
-              console.log(`[BLOCKCHAIN] 🏆 Transaction included in best block: ${txHash}`);
-            } else if (event.type === "finalized") {
-              blockHash = event.blockHash;
-              console.log(`[BLOCKCHAIN] 🎯 Transaction finalized in block: ${blockHash}`);
-            }
-          },
-          error: (error: any) => {
-            console.error('[BLOCKCHAIN] 💥 Transaction error:', error);
-            reject({
-              success: false,
-              error: `Transaction failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            });
-          },
-          complete: () => {
-            console.log('[BLOCKCHAIN] 🎉 Transaction completed successfully!');
-            const result = {
+          if (result.status.isInBlock) {
+            txHash = result.txHash.toHex();
+            blockHash = result.status.asInBlock.toHex();
+            console.log(`[BLOCKCHAIN] 🏆 Transaction included in block: ${txHash}`);
+          } else if (result.status.isFinalized) {
+            blockHash = result.status.asFinalized.toHex();
+            console.log(`[BLOCKCHAIN] 🎯 Transaction finalized in block: ${blockHash}`);
+            
+            const finalResult = {
               success: true,
               transactionHash: txHash,
               blockHash: blockHash,
               explorerUrl: this.getExplorerUrl(txHash),
             };
             console.log(`[BLOCKCHAIN] 📊 Final transaction result:`, {
-              txHash: result.transactionHash,
-              blockHash: result.blockHash,
-              explorerUrl: result.explorerUrl
+              txHash: finalResult.transactionHash,
+              blockHash: finalResult.blockHash,
+              explorerUrl: finalResult.explorerUrl
             });
-            resolve(result);
+            
+            resolve(finalResult);
+          } else if (result.status.isInvalid || result.status.isDropped || result.status.isUsurped) {
+            console.error('[BLOCKCHAIN] 💥 Transaction failed:', result.status.type);
+            reject({
+              success: false,
+              error: `Transaction failed with status: ${result.status.type}`,
+            });
           }
+        }).catch((error: any) => {
+          console.error('[BLOCKCHAIN] 💥 Transaction submission error:', error);
+          reject({
+            success: false,
+            error: `Transaction submission failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          });
         });
       });
 
