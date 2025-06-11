@@ -235,7 +235,7 @@ describe('Blockchain Service', () => {
     it('should disconnect the blockchain service', async () => {
       const service = getBlockchainService();
       await service.disconnect();
-      
+
       // Should complete without error
       expect(service).toBeDefined();
     });
