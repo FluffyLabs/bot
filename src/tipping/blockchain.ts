@@ -8,8 +8,11 @@
 
 import { isSupportedAsset } from "../config.js";
 import type { TipCommand } from "./types.js";
-import { ed25519PairFromSeed, mnemonicToMiniSecret, ed25519Sign } from '@polkadot/util-crypto';
+import { ed25519PairFromSeed, mnemonicToMiniSecret } from '@polkadot/util-crypto';
 import { hexToU8a, u8aToHex } from '@polkadot/util';
+import { getPolkadotSigner, type PolkadotSigner } from "@polkadot-api/signer";
+import type { PolkadotClient, TypedApi, TxEvent } from "polkadot-api";
+import { asset_hub, MultiAddress } from "@polkadot-api/descriptors";
 
 export interface TransactionResult {
   success: boolean;
@@ -22,19 +25,6 @@ export interface TransactionResult {
 export interface BlockchainService {
   sendTip(tipCommand: TipCommand): Promise<TransactionResult>;
   disconnect(): Promise<void>;
-}
-
-class MySigner {
-  publicKey: Uint8Array;
-
-  constructor(publicKey: Uint8Array, private secretKey: Uint8Array) {
-    this.publicKey = publicKey;
-  }
-
-  async sign(payload: Uint8Array): Promise<Uint8Array> {
-    const keypair = { publicKey: this.publicKey, secretKey: this.secretKey };
-    return ed25519Sign(payload, keypair);
-  }
 }
 
 // Check if we're in test mode
@@ -144,17 +134,14 @@ class MockAssetHubService implements BlockchainService {
 }
 
 class AssetHubService implements BlockchainService {
-  private client: any;
-  private api: any;
+  private client: PolkadotClient | null = null;
+  private api: TypedApi<typeof asset_hub> | null = null;
   private connected = false;
-  private provider: any;
+  private provider: any = null;
   private walletSeed: string;
   private assetHubRpc: string;
 
   constructor(walletSeed: string, assetHubRpc: string) {
-    this.client = null;
-    this.api = null;
-    this.provider = null;
     this.walletSeed = walletSeed;
     this.assetHubRpc = assetHubRpc;
   }
@@ -169,7 +156,6 @@ class AssetHubService implements BlockchainService {
         console.log(`[BLOCKCHAIN] 📦 Loading polkadot-api modules...`);
         const { createClient } = await import("polkadot-api");
         const { getWsProvider } = await import("polkadot-api/ws-provider/node");
-        const { asset_hub } = await import("@polkadot-api/descriptors");
         console.log(`[BLOCKCHAIN] ✅ Polkadot-api modules loaded`);
 
         // Create WebSocket provider
@@ -199,7 +185,7 @@ class AssetHubService implements BlockchainService {
     }
   }
 
-  private async createSigner(seed: string) {
+  private createSigner(seed: string): PolkadotSigner {
     try {
       console.log(`[BLOCKCHAIN] 🔑 Creating Ed25519 signer from seed...`);
 
@@ -232,14 +218,20 @@ class AssetHubService implements BlockchainService {
       console.log(`[BLOCKCHAIN] ✅ Ed25519 keypair generated`);
       console.log(`[BLOCKCHAIN] 🔑 Public key: ${u8aToHex(publicKey)}`);
 
-      // Create MySigner instance
-      const mySigner = new MySigner(publicKey, secretKey);
+      // Create PolkadotSigner using the helper function
+      const signer = getPolkadotSigner(
+        publicKey,
+        "Ed25519",
+        async (signingPayload: Uint8Array) => {
+          console.log(`[BLOCKCHAIN] ✍️ Signing transaction...`);
+          const { ed25519Sign } = await import('@polkadot/util-crypto');
+          const signature = ed25519Sign(signingPayload, { publicKey, secretKey });
+          console.log(`[BLOCKCHAIN] ✅ Transaction signed`);
+          return signature;
+        }
+      );
 
-      // Return account ID (public key) and signer for use with signAndSend
-      return {
-        accountId: publicKey,
-        signer: mySigner
-      };
+      return signer;
     } catch (error) {
       throw new Error(`Failed to create signer from seed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -263,7 +255,7 @@ class AssetHubService implements BlockchainService {
       await this.ensureConnection();
 
       console.log(`[BLOCKCHAIN] 🔐 Creating transaction signer...`);
-      const { accountId, signer } = await this.createSigner(this.walletSeed);
+      const signer = this.createSigner(this.walletSeed);
       console.log(`[BLOCKCHAIN] ✅ Signer created successfully`);
 
       // Convert amount to the smallest unit
@@ -279,88 +271,130 @@ class AssetHubService implements BlockchainService {
       }
       console.log(`[BLOCKCHAIN] ✅ Address validation passed`);
 
-      // Dynamic import for MultiAddress
-      console.log(`[BLOCKCHAIN] 📦 Loading MultiAddress type...`);
-      const { MultiAddress } = await import("@polkadot-api/descriptors");
-      console.log(`[BLOCKCHAIN] ✅ MultiAddress loaded`);
-
-      let transaction;
+      console.log(`[BLOCKCHAIN] 📡 Creating and signing transaction...`);
+      console.log(`Sending ${tipCommand.amount} ${tipCommand.asset} to ${tipCommand.recipientAddress}`);
 
       if (tipCommand.asset === "DOT") {
         console.log(`[BLOCKCHAIN] 💎 Creating DOT transfer transaction using Balances pallet...`);
+
+        if (!this.api) {
+          throw new Error("API not initialized");
+        }
+
         // Create DOT transfer transaction using Balances pallet
-        transaction = this.api.tx.Balances.transfer_keep_alive({
+        const transaction = this.api.tx.Balances.transfer_keep_alive({
           dest: MultiAddress.Id(tipCommand.recipientAddress),
           value: amount,
         });
         console.log(`[BLOCKCHAIN] ✅ DOT transaction created`);
+
+        // Sign and submit transaction with monitoring
+        return new Promise((resolve) => {
+          console.log(`[BLOCKCHAIN] 👀 Starting transaction submission...`);
+
+          // Submit the signed transaction and monitor status
+          transaction.signSubmitAndWatch(signer)
+            .subscribe({
+              next: (event: TxEvent) => {
+                console.log(`[BLOCKCHAIN] 📡 Transaction event:`, event.type);
+
+                if (event.type === "txBestBlocksState") {
+                  console.log(`[BLOCKCHAIN] 🏆 Transaction in best block. Hash: ${event.txHash}`);
+                } else if (event.type === "finalized") {
+                  console.log(`[BLOCKCHAIN] 🎯 Transaction finalized in block: ${event.block.hash}`);
+
+                  const finalResult = {
+                    success: true,
+                    transactionHash: event.txHash,
+                    blockHash: event.block.hash,
+                    explorerUrl: this.getExplorerUrl(event.txHash),
+                  };
+                  console.log(`[BLOCKCHAIN] 📊 Final transaction result:`, {
+                    txHash: finalResult.transactionHash,
+                    blockHash: finalResult.blockHash,
+                    explorerUrl: finalResult.explorerUrl
+                  });
+
+                  resolve(finalResult);
+                }
+              },
+              error: (error: Error) => {
+                console.error('[BLOCKCHAIN] 💥 Transaction error:', error);
+                resolve({
+                  success: false,
+                  error: `Transaction failed: ${error.message}`,
+                });
+              },
+              complete: () => {
+                console.log('[BLOCKCHAIN] ✅ Transaction monitoring complete');
+              }
+            });
+        });
+
       } else if (tipCommand.asset === "USDC") {
         // USDC Asset ID on Asset Hub Polkadot (this may need to be updated)
         const usdcAssetId = 1337;
         console.log(`[BLOCKCHAIN] 🪙 Creating USDC transfer transaction using Assets pallet (asset ID: ${usdcAssetId})...`);
 
+        if (!this.api) {
+          throw new Error("API not initialized");
+        }
+
         // Create USDC transfer transaction using Assets pallet
-        transaction = this.api.tx.Assets.transfer_keep_alive({
+        const transaction = this.api.tx.Assets.transfer_keep_alive({
           id: usdcAssetId,
           target: MultiAddress.Id(tipCommand.recipientAddress),
           amount: amount,
         });
         console.log(`[BLOCKCHAIN] ✅ USDC transaction created`);
+
+        // Sign and submit transaction with monitoring
+        return new Promise((resolve) => {
+          console.log(`[BLOCKCHAIN] 👀 Starting transaction submission...`);
+
+          // Submit the signed transaction and monitor status
+          transaction.signSubmitAndWatch(signer)
+            .subscribe({
+              next: (event: TxEvent) => {
+                console.log(`[BLOCKCHAIN] 📡 Transaction event:`, event.type);
+
+                if (event.type === "txBestBlocksState") {
+                  console.log(`[BLOCKCHAIN] 🏆 Transaction in best block. Hash: ${event.txHash}`);
+                } else if (event.type === "finalized") {
+                  console.log(`[BLOCKCHAIN] 🎯 Transaction finalized in block: ${event.block.hash}`);
+
+                  const finalResult = {
+                    success: true,
+                    transactionHash: event.txHash,
+                    blockHash: event.block.hash,
+                    explorerUrl: this.getExplorerUrl(event.txHash),
+                  };
+                  console.log(`[BLOCKCHAIN] 📊 Final transaction result:`, {
+                    txHash: finalResult.transactionHash,
+                    blockHash: finalResult.blockHash,
+                    explorerUrl: finalResult.explorerUrl
+                  });
+
+                  resolve(finalResult);
+                }
+              },
+              error: (error: Error) => {
+                console.error('[BLOCKCHAIN] 💥 Transaction error:', error);
+                resolve({
+                  success: false,
+                  error: `Transaction failed: ${error.message}`,
+                });
+              },
+              complete: () => {
+                console.log('[BLOCKCHAIN] ✅ Transaction monitoring complete');
+              }
+            });
+        });
+
       } else {
         console.log(`[BLOCKCHAIN] ❌ Unsupported asset: ${tipCommand.asset}`);
         throw new Error(`Unsupported asset: ${tipCommand.asset}`);
       }
-
-      console.log(`[BLOCKCHAIN] 📡 Signing and submitting transaction...`);
-      console.log(`Sending ${tipCommand.amount} ${tipCommand.asset} to ${tipCommand.recipientAddress}`);
-
-      // Sign and submit transaction with monitoring
-      return new Promise((resolve, reject) => {
-        let txHash: string;
-        let blockHash: string;
-
-        console.log(`[BLOCKCHAIN] 👀 Starting transaction monitoring...`);
-        
-        // Use signAndSend with the Ed25519 signer
-        transaction.signAndSend(accountId, { signer }, (result: any) => {
-          console.log(`[BLOCKCHAIN] 📡 Transaction status:`, result.status.type);
-
-          if (result.status.isInBlock) {
-            txHash = result.txHash.toHex();
-            blockHash = result.status.asInBlock.toHex();
-            console.log(`[BLOCKCHAIN] 🏆 Transaction included in block: ${txHash}`);
-          } else if (result.status.isFinalized) {
-            blockHash = result.status.asFinalized.toHex();
-            console.log(`[BLOCKCHAIN] 🎯 Transaction finalized in block: ${blockHash}`);
-            
-            const finalResult = {
-              success: true,
-              transactionHash: txHash,
-              blockHash: blockHash,
-              explorerUrl: this.getExplorerUrl(txHash),
-            };
-            console.log(`[BLOCKCHAIN] 📊 Final transaction result:`, {
-              txHash: finalResult.transactionHash,
-              blockHash: finalResult.blockHash,
-              explorerUrl: finalResult.explorerUrl
-            });
-            
-            resolve(finalResult);
-          } else if (result.status.isInvalid || result.status.isDropped || result.status.isUsurped) {
-            console.error('[BLOCKCHAIN] 💥 Transaction failed:', result.status.type);
-            reject({
-              success: false,
-              error: `Transaction failed with status: ${result.status.type}`,
-            });
-          }
-        }).catch((error: any) => {
-          console.error('[BLOCKCHAIN] 💥 Transaction submission error:', error);
-          reject({
-            success: false,
-            error: `Transaction submission failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          });
-        });
-      });
 
     } catch (error) {
       const errorMessage = `Blockchain transaction failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
@@ -391,15 +425,15 @@ class AssetHubService implements BlockchainService {
           this.client.destroy();
         }
         if (this.provider && typeof this.provider.disconnect === 'function') {
-          this.provider.disconnect();
+          await this.provider.disconnect();
         }
         this.client = null;
         this.api = null;
         this.provider = null;
         this.connected = false;
-        console.log('Disconnected from Asset Hub');
+        console.log('[BLOCKCHAIN] 🔌 Disconnected from Asset Hub');
       } catch (error) {
-        console.error('Error disconnecting from Asset Hub:', error);
+        console.error('[BLOCKCHAIN] 💥 Error disconnecting from Asset Hub:', error);
       }
     }
   }
