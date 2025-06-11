@@ -8,9 +8,11 @@
 
 import type { TipCommand } from "./types.js";
 import { MockAssetHubService } from "./mock-blockchain.js";
-import { sr25519PairFromSeed, mnemonicToMiniSecret } from '@polkadot/util-crypto';
+import { sr25519PairFromSeed, mnemonicToMiniSecret, encodeAddress, sr25519Sign } from '@polkadot/util-crypto';
 import { hexToU8a, u8aToHex } from '@polkadot/util';
 import { getPolkadotSigner, type PolkadotSigner } from "@polkadot-api/signer";
+import { createClient } from "polkadot-api";
+import { getWsProvider } from "polkadot-api/ws-provider/node";
 import type { PolkadotClient, TypedApi, TxEvent } from "polkadot-api";
 import { asset_hub, MultiAddress } from "@polkadot-api/descriptors";
 
@@ -89,12 +91,6 @@ class AssetHubService implements BlockchainService {
       console.log(`[BLOCKCHAIN] 🌐 RPC endpoint: ${this.assetHubRpc}`);
 
       try {
-        // Dynamic imports for polkadot-api modules
-        console.log(`[BLOCKCHAIN] 📦 Loading polkadot-api modules...`);
-        const { createClient } = await import("polkadot-api");
-        const { getWsProvider } = await import("polkadot-api/ws-provider/node");
-        console.log(`[BLOCKCHAIN] ✅ Polkadot-api modules loaded`);
-
         // Create WebSocket provider
         console.log(`[BLOCKCHAIN] 🔗 Creating WebSocket provider...`);
         this.provider = getWsProvider(this.assetHubRpc);
@@ -161,8 +157,7 @@ class AssetHubService implements BlockchainService {
         "Sr25519",
         async (signingPayload: Uint8Array) => {
           console.log(`[BLOCKCHAIN] ✍️ Signing transaction...`);
-          const { ed25519Sign } = await import('@polkadot/util-crypto');
-          const signature = ed25519Sign(signingPayload, { publicKey, secretKey });
+          const signature = sr25519Sign(signingPayload, { publicKey, secretKey });
           console.log(`[BLOCKCHAIN] ✅ Transaction signed`);
           return signature;
         }
@@ -333,7 +328,6 @@ class AssetHubService implements BlockchainService {
       
       // Convert public key to address format
       console.log(`[BLOCKCHAIN] 🏠 Getting wallet address from public key...`);
-      const { encodeAddress } = await import('@polkadot/util-crypto');
       const walletAddress = encodeAddress(publicKey, 0); // Polkadot prefix
       console.log(`[BLOCKCHAIN] 📍 Wallet address: ${walletAddress}`);
 
