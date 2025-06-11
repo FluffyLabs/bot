@@ -8,7 +8,7 @@
 
 import { isSupportedAsset } from "../config.js";
 import type { TipCommand } from "./types.js";
-import { ed25519PairFromSeed, mnemonicToMiniSecret } from '@polkadot/util-crypto';
+import { sr25519PairFromSeed, mnemonicToMiniSecret } from '@polkadot/util-crypto';
 import { hexToU8a, u8aToHex } from '@polkadot/util';
 import { getPolkadotSigner, type PolkadotSigner } from "@polkadot-api/signer";
 import type { PolkadotClient, TypedApi, TxEvent } from "polkadot-api";
@@ -187,7 +187,7 @@ class AssetHubService implements BlockchainService {
 
   private createSigner(seed: string): PolkadotSigner {
     try {
-      console.log(`[BLOCKCHAIN] 🔑 Creating Ed25519 signer from seed...`);
+      console.log(`[BLOCKCHAIN] 🔑 Creating Sr25519 signer from seed...`);
 
       let seedBytes: Uint8Array;
 
@@ -209,23 +209,23 @@ class AssetHubService implements BlockchainService {
         throw new Error("Seed must be 32 bytes long");
       }
 
-      // Generate Ed25519 keypair from seed
-      console.log(`[BLOCKCHAIN] 🔐 Generating Ed25519 keypair...`);
-      const keyPair = ed25519PairFromSeed(seedBytes);
+      // Generate Sr25519 keypair from seed
+      console.log(`[BLOCKCHAIN] 🔐 Generating Sr25519 keypair...`);
+      const keyPair = sr25519PairFromSeed(seedBytes);
       const publicKey = keyPair.publicKey;
       const secretKey = keyPair.secretKey;
 
-      console.log(`[BLOCKCHAIN] ✅ Ed25519 keypair generated`);
+      console.log(`[BLOCKCHAIN] ✅ Sr25519 keypair generated`);
       console.log(`[BLOCKCHAIN] 🔑 Public key: ${u8aToHex(publicKey)}`);
 
       // Create PolkadotSigner using the helper function
       const signer = getPolkadotSigner(
         publicKey,
-        "Ed25519",
+        "Sr25519",
         async (signingPayload: Uint8Array) => {
           console.log(`[BLOCKCHAIN] ✍️ Signing transaction...`);
-          const { ed25519Sign } = await import('@polkadot/util-crypto');
-          const signature = ed25519Sign(signingPayload, { publicKey, secretKey });
+          const { sr25519Sign } = await import('@polkadot/util-crypto');
+          const signature = sr25519Sign(signingPayload, { publicKey, secretKey });
           console.log(`[BLOCKCHAIN] ✅ Transaction signed`);
           return signature;
         }
