@@ -1,6 +1,5 @@
 import { CommentParser } from "./parser.js";
 import { checkAuthorization } from "./authorization.js";
-import { getConfig } from "../config.js";
 import type { TipProcessingResult } from "./types.js";
 import { GitHubApi } from "../types.js";
 
@@ -11,6 +10,10 @@ export async function processTipComment(
   octokit: GitHubApi,
   commentBody: string,
   author: string,
+  org: string,
+  team: string,
+  maxDotTip: number,
+  maxUsdcTip: number,
 ): Promise<TipProcessingResult> {
   // Parse the comment
   const parseResult = CommentParser.parseComment(commentBody);
@@ -32,7 +35,7 @@ export async function processTipComment(
   const tipCommand = parseResult.tipCommand!;
 
   // Check authorization
-  const authResult = await checkAuthorization(octokit, author);
+  const authResult = await checkAuthorization(octokit, author, org, team);
 
   if (!authResult.isAuthorized) {
     return {
@@ -43,11 +46,10 @@ export async function processTipComment(
   }
 
   // Validate tip amount against limits
-  const config = getConfig();
   const maxAmount =
     tipCommand.asset === "DOT"
-      ? config.blockchain.maxDotTip
-      : config.blockchain.maxUsdcTip;
+      ? maxDotTip
+      : maxUsdcTip;
 
   if (tipCommand.amount > maxAmount) {
     return {

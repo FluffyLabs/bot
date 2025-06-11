@@ -2,23 +2,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { GitHubApi } from '../../src/types.js';
 import { canUserTip, checkAuthorization } from '../../src/tipping/authorization.js';
 
-// Mock the config module
-vi.mock('../../src/config.js', () => ({
-  getConfig: vi.fn(() => ({
-    github: {
-      org: 'fluffylabs',
-      team: 'core-team',
-      botName: 'fluffylabs-bot'
-    },
-    blockchain: {
-      walletSeed: 'test-seed',
-      assetHubRpc: 'wss://test-rpc.example.com',
-      maxDotTip: 100,
-      maxUsdcTip: 1000
-    }
-  }))
-}));
-
 describe('Authorization', () => {
   let mockOctokit: GitHubApi;
 
@@ -45,7 +28,7 @@ describe('Authorization', () => {
         data: { state: 'active' }
       });
 
-      const result = await checkAuthorization(mockOctokit, 'alice');
+      const result = await checkAuthorization(mockOctokit, 'alice', 'fluffylabs', 'core-team');
 
       expect(result.isAuthorized).toBe(true);
       expect(result.reason).toBeUndefined();
@@ -60,7 +43,7 @@ describe('Authorization', () => {
         status: 404
       });
 
-      const result = await checkAuthorization(mockOctokit, 'bob');
+      const result = await checkAuthorization(mockOctokit, 'bob', 'fluffylabs', 'core-team');
 
       expect(result.isAuthorized).toBe(false);
       expect(result.reason).toContain("not a member of team 'core-team'");
@@ -74,7 +57,7 @@ describe('Authorization', () => {
         data: { state: 'pending' }
       });
 
-      const result = await checkAuthorization(mockOctokit, 'charlie');
+      const result = await checkAuthorization(mockOctokit, 'charlie', 'fluffylabs', 'core-team');
 
       expect(result.isAuthorized).toBe(false);
       expect(result.reason).toContain('pending invitation');
@@ -88,7 +71,7 @@ describe('Authorization', () => {
         data: { state: 'active' }
       });
 
-      const result = await checkAuthorization(mockOctokit, 'alice');
+      const result = await checkAuthorization(mockOctokit, 'alice', 'fluffylabs', 'core-team');
 
       expect(result.isAuthorized).toBe(true);
       expect(result.membershipDetails?.error).toContain('Warning');
@@ -121,7 +104,7 @@ describe('Authorization', () => {
         data: { state: 'active' }
       });
 
-      const result = await canUserTip(mockOctokit, 'alice');
+      const result = await canUserTip(mockOctokit, 'alice', 'fluffylabs', 'core-team');
 
       expect(result).toBe(true);
     });
@@ -134,7 +117,7 @@ describe('Authorization', () => {
         status: 404
       });
 
-      const result = await canUserTip(mockOctokit, 'bob');
+      const result = await canUserTip(mockOctokit, 'bob', 'fluffylabs', 'core-team');
 
       expect(result).toBe(false);
     });

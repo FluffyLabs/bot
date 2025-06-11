@@ -1,5 +1,7 @@
 import { Probot } from "probot";
 import { containsBotMention, processTipComment } from "./tipping.js";
+import { getBlockchainService } from "./blockchain.js";
+import { getConfig } from "../config.js";
 
 export function setupTippingBot(app: Probot) {
   app.on(
@@ -18,11 +20,18 @@ export function setupTippingBot(app: Probot) {
         return;
       }
 
+      // Load config
+      const config = getConfig();
+
       // Process the tip comment
       const result = await processTipComment(
         context.octokit,
         comment.body,
         author,
+        config.github.org,
+        config.github.team,
+        config.blockchain.maxDotTip,
+        config.blockchain.maxUsdcTip,
       );
 
       if (!result.success) {
@@ -36,17 +45,50 @@ export function setupTippingBot(app: Probot) {
         return;
       }
 
-      // Tip is valid - show confirmation (TODO: implement blockchain transaction)
+      // Tip is valid - send blockchain transaction
       const tip = result.tipCommand!;
+
+      // Post initial confirmation
       await context.octokit.issues.createComment({
         ...context.issue(),
         body:
-          `✅ **Tip validated** from @${author}\n` +
+          `⏳ **Processing tip** from @${author}\n` +
           `**To**: \`${tip.recipientAddress}\`\n` +
           `**Amount**: ${tip.amount} ${tip.asset}\n` +
           `${tip.comment ? `**Message**: ${tip.comment}\n` : ""}` +
-          `\n🚧 **Transaction sending not yet implemented**`,
+          `\n🔄 Sending transaction...`,
       });
+
+      // Send the blockchain transaction
+      const blockchainService = getBlockchainService(
+        config.blockchain.walletSeed,
+        config.blockchain.assetHubRpc
+      );
+      const txResult = await blockchainService.sendTip(tip);
+
+      // Post transaction result
+      if (txResult.success) {
+        await context.octokit.issues.createComment({
+          ...context.issue(),
+          body:
+            `✅ **Tip sent successfully!** 🎉\n` +
+            `**From**: @${author}\n` +
+            `**To**: \`${tip.recipientAddress}\`\n` +
+            `**Amount**: ${tip.amount} ${tip.asset}\n` +
+            `${tip.comment ? `**Message**: ${tip.comment}\n` : ""}` +
+            `\n**Transaction Hash**: \`${txResult.transactionHash}\`\n` +
+            `**Block Hash**: \`${txResult.blockHash}\`\n` +
+            `${txResult.explorerUrl ? `**Explorer**: ${txResult.explorerUrl}\n` : ""}`,
+        });
+      } else {
+        await context.octokit.issues.createComment({
+          ...context.issue(),
+          body:
+            `❌ **Transaction failed**\n` +
+            `**Error**: ${txResult.error}\n` +
+            `\nPlease check the configuration and try again.`,
+        });
+      }
     },
   );
 }

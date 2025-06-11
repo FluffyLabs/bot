@@ -17,15 +17,6 @@ vi.mock('../../src/tipping/authorization.js', () => ({
   checkAuthorization: vi.fn(),
 }));
 
-vi.mock('../../src/config.js', () => ({
-  getConfig: vi.fn(() => ({
-    blockchain: {
-      maxDotTip: 100,
-      maxUsdcTip: 1000,
-    }
-  }))
-}));
-
 describe('Tipping', () => {
   let mockOctokit: GitHubApi;
 
@@ -53,7 +44,7 @@ describe('Tipping', () => {
         isAuthorized: true
       });
 
-      const result = await processTipComment(mockOctokit, '@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 10 DOT great work!', 'alice');
+      const result = await processTipComment(mockOctokit, '@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 10 DOT great work!', 'alice', 'fluffylabs', 'core-team', 100, 1000);
 
       expect(result.success).toBe(true);
       expect(result.tipCommand?.amount).toBe(10);
@@ -66,7 +57,7 @@ describe('Tipping', () => {
         error: 'Invalid Asset Hub address format'
       });
 
-      const result = await processTipComment(mockOctokit, '@fluffylabs-bot tip invalid-address 10 DOT', 'alice');
+      const result = await processTipComment(mockOctokit, '@fluffylabs-bot tip invalid-address 10 DOT', 'alice', 'fluffylabs', 'core-team', 100, 1000);
 
       expect(result.success).toBe(false);
       expect(result.errorMessage).toContain('Invalid tip command');
@@ -88,7 +79,7 @@ describe('Tipping', () => {
         reason: 'User not a member of team'
       });
 
-      const result = await processTipComment(mockOctokit, '@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 10 DOT', 'bob');
+      const result = await processTipComment(mockOctokit, '@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 10 DOT', 'bob', 'fluffylabs', 'core-team', 100, 1000);
 
       expect(result.success).toBe(false);
       expect(result.errorMessage).toContain('Authorization failed');
@@ -109,7 +100,7 @@ describe('Tipping', () => {
         isAuthorized: true
       });
 
-      const result = await processTipComment(mockOctokit, '@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 150 DOT', 'alice');
+      const result = await processTipComment(mockOctokit, '@fluffylabs-bot tip 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 150 DOT', 'alice', 'fluffylabs', 'core-team', 100, 1000);
 
       expect(result.success).toBe(false);
       expect(result.errorMessage).toContain('exceeds maximum of 100 DOT');
@@ -121,7 +112,7 @@ describe('Tipping', () => {
         error: 'Comment does not mention the bot'
       });
 
-      const result = await processTipComment(mockOctokit, 'Just a regular comment', 'alice');
+      const result = await processTipComment(mockOctokit, 'Just a regular comment', 'alice', 'fluffylabs', 'core-team', 100, 1000);
 
       expect(result.success).toBe(false);
       expect(result.errorMessage).toBeUndefined();

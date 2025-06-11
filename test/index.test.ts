@@ -14,19 +14,18 @@ const privateKey = fs.readFileSync(
   "utf-8",
 );
 
-// Mock config for testing
-vi.mock("../src/config.js", () => ({
-  getConfig: vi.fn(() => ({
-    github: {
-      org: "fluffylabs",
-      team: "core-team",
-      botName: "fluffylabs-bot",
-    },
-    blockchain: {
-      maxDotTip: 100,
-      maxUsdcTip: 1000,
-    },
+// Mock the blockchain service
+vi.mock("../src/tipping/blockchain.js", () => ({
+  getBlockchainService: vi.fn(() => ({
+    sendTip: vi.fn().mockResolvedValue({
+      success: true,
+      transactionHash: "0x1234567890abcdef",
+      blockHash: "0xabcdef1234567890",
+      explorerUrl: "https://assethub-polkadot.subscan.io/extrinsic/0x1234567890abcdef",
+    }),
+    disconnect: vi.fn().mockResolvedValue(undefined),
   })),
+  disconnectBlockchain: vi.fn().mockResolvedValue(undefined),
 }));
 
 const tipCommentPayload = {
@@ -280,6 +279,15 @@ describe("Tipping Bot E2E", () => {
 
   beforeEach(() => {
     nock.disableNetConnect();
+    
+    // Set up environment variables for the test
+    process.env.GITHUB_ORG = "fluffylabs";
+    process.env.GITHUB_TEAM = "core-team";
+    process.env.WALLET_SEED = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+    process.env.MAX_DOT_TIP = "100";
+    process.env.MAX_USDC_TIP = "1000";
+    process.env.ASSET_HUB_RPC = "wss://test-rpc.example.com";
+    
     probot = new Probot({
       appId: 123,
       privateKey,
@@ -305,14 +313,26 @@ describe("Tipping Bot E2E", () => {
       .reply(200, { slug: "core-team" })
       .get("/orgs/fluffylabs/teams/core-team/memberships/alice")
       .reply(200, { state: "active" })
-      // Expect success comment
+      // Expect processing comment
       .post(
         "/repos/hiimbex/testing-things/issues/1/comments",
         (body: { body: string }) => {
-          expect(body.body).toContain("✅ **Tip validated**");
+          expect(body.body).toContain("⏳ **Processing tip**");
           expect(body.body).toContain("@alice");
           expect(body.body).toContain("10 DOT");
           expect(body.body).toContain("great work!");
+          return true;
+        },
+      )
+      .reply(200)
+      // Expect success comment after transaction
+      .post(
+        "/repos/hiimbex/testing-things/issues/1/comments",
+        (body: { body: string }) => {
+          expect(body.body).toContain("✅ **Tip sent successfully!**");
+          expect(body.body).toContain("@alice");
+          expect(body.body).toContain("10 DOT");
+          expect(body.body).toContain("0x1234567890abcdef");
           return true;
         },
       )
@@ -420,5 +440,13 @@ describe("Tipping Bot E2E", () => {
   afterEach(() => {
     nock.cleanAll();
     nock.enableNetConnect();
+    
+    // Clean up environment variables
+    delete process.env.GITHUB_ORG;
+    delete process.env.GITHUB_TEAM;
+    delete process.env.WALLET_SEED;
+    delete process.env.MAX_DOT_TIP;
+    delete process.env.MAX_USDC_TIP;
+    delete process.env.ASSET_HUB_RPC;
   });
 });

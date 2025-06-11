@@ -1,4 +1,3 @@
-import { getConfig } from "../config.js";
 import { AuthorizationResult, GitHubApi } from "../types.js";
 import { checkMembership } from "./membership.js";
 
@@ -8,18 +7,14 @@ import { checkMembership } from "./membership.js";
 export async function checkAuthorization(
   octokit: GitHubApi,
   username: string,
-  org?: string,
-  team?: string,
+  org: string,
+  team: string,
 ): Promise<AuthorizationResult> {
   try {
-    const config = getConfig();
-    const finalOrg = org || config.github.org;
-    const finalTeam = team || config.github.team;
-
     const membershipResult = await checkMembership(
       octokit,
-      finalOrg,
-      finalTeam,
+      org,
+      team,
       username,
     );
 
@@ -31,12 +26,12 @@ export async function checkAuthorization(
     }
 
     // Determine reason for failure
-    let reason = `User '${username}' is not a member of team '${finalTeam}' in organization '${finalOrg}'`;
+    let reason = `User '${username}' is not a member of team '${team}' in organization '${org}'`;
 
     if (membershipResult.error) {
       reason = membershipResult.error;
     } else if (membershipResult.state === "pending") {
-      reason = `User '${username}' has a pending invitation to team '${finalTeam}'`;
+      reason = `User '${username}' has a pending invitation to team '${team}'`;
     }
 
     return {
@@ -62,8 +57,8 @@ export async function checkAuthorization(
 export async function canUserTip(
   octokit: GitHubApi,
   username: string,
-  org?: string,
-  team?: string,
+  org: string,
+  team: string,
 ): Promise<boolean> {
   const result = await checkAuthorization(octokit, username, org, team);
   return result.isAuthorized;

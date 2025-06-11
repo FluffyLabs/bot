@@ -1,4 +1,5 @@
 import type { Context } from "probot";
+import type { TipCommand } from "./tipping/types.js";
 
 // Use Probot's context octokit type which includes the rest property
 export type GitHubApi = Context["octokit"];
@@ -40,4 +41,19 @@ export interface AuthorizationResult {
 export interface GitHubApiError extends Error {
   status?: number;
   message: string;
+}
+
+// Blockchain transaction result interface
+export interface TransactionResult {
+  success: boolean;
+  transactionHash?: string;
+  blockHash?: string;
+  error?: string;
+  explorerUrl?: string;
+}
+
+// Blockchain service interface
+export interface BlockchainService {
+  sendTip(tipCommand: TipCommand): Promise<TransactionResult>;
+  disconnect(): Promise<void>;
 }

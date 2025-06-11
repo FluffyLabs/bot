@@ -18,6 +18,12 @@
     "test-watch": "vitest"
   },
   "dependencies": {
+    "@polkadot-api/descriptors": "file:.papi/descriptors",
+    "@polkadot-api/known-chains": "^0.8.0",
+    "@polkadot-api/signer": "^0.2.2",
+    "@polkadot-api/substrate-bindings": "^0.14.0",
+    "@polkadot-api/substrate-client": "^0.4.0",
+    "polkadot-api": "^1.13.1",
     "probot": "^13.0.1"
   },
   "devDependencies": {
