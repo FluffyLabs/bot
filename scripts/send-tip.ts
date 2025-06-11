@@ -2,9 +2,9 @@
 
 /**
  * CLI tool for testing tip transactions
- * 
+ *
  * Usage: npm run send-tip "@fluffylabs-bot tip <address> <amount> <asset> [comment]"
- * 
+ *
  * This tool allows you to test blockchain transactions directly without going through GitHub,
  * which is useful for debugging blockchain connectivity and transaction issues.
  */
@@ -13,7 +13,6 @@ import { config } from 'dotenv';
 import { CommentParser } from '../src/tipping/parser.js';
 import { getBlockchainService, disconnectBlockchain } from '../src/tipping/blockchain.js';
 import { getConfig } from '../src/config.js';
-
 config();
 
 function printUsage() {
@@ -46,7 +45,7 @@ async function main() {
   try {
     // Get command line arguments
     const args = process.argv.slice(2);
-    
+
     if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
       printUsage();
       process.exit(0);
@@ -65,7 +64,7 @@ async function main() {
     // Parse the tip command
     console.log('🧩 Parsing tip command...');
     const parseResult = CommentParser.parseComment(tipCommand);
-    
+
     if (!parseResult.success) {
       console.error(`❌ Failed to parse tip command: ${parseResult.error}`);
       console.log('');
@@ -102,25 +101,25 @@ async function main() {
     // Check wallet balance first
     console.log('💳 Checking wallet balance...');
     const balanceResult = await blockchainService.checkBalance();
-    
+
     if (balanceResult.success) {
       const dotBalance = Number(balanceResult.dotBalance) / 10_000_000_000;
       const usdcBalance = Number(balanceResult.usdcBalance) / 1_000_000;
-      
+
       console.log('✅ Wallet balance:');
       console.log(`  DOT: ${dotBalance.toFixed(4)} DOT`);
       console.log(`  USDC: ${usdcBalance.toFixed(2)} USDC`);
-      
+
       if (tip.asset === 'DOT' && dotBalance < tip.amount) {
         console.error(`❌ Insufficient DOT balance: need ${tip.amount} DOT, have ${dotBalance.toFixed(4)} DOT`);
         process.exit(1);
       }
-      
+
       if (tip.asset === 'USDC' && usdcBalance < tip.amount) {
         console.error(`❌ Insufficient USDC balance: need ${tip.amount} USDC, have ${usdcBalance.toFixed(2)} USDC`);
         process.exit(1);
       }
-      
+
       console.log('✅ Sufficient balance available');
     } else {
       console.warn(`⚠️ Could not check wallet balance: ${balanceResult.error}`);
@@ -141,7 +140,7 @@ async function main() {
     // Display results
     console.log('📊 Transaction Result:');
     console.log('='.repeat(50));
-    
+
     if (txResult.success) {
       console.log('🎉 Transaction successful!');
       console.log(`Transaction Hash: ${txResult.transactionHash}`);
@@ -151,13 +150,13 @@ async function main() {
       console.log('❌ Transaction failed!');
       console.log(`Error: ${txResult.error}`);
     }
-    
+
     console.log('='.repeat(50));
 
   } catch (error) {
     console.error('💥 CLI Error:', error instanceof Error ? error.message : 'Unknown error');
     console.error('');
-    
+
     if (error instanceof Error && error.message.includes('Configuration Error')) {
       console.log('💡 Make sure all required environment variables are set:');
       console.log('  WALLET_SEED, MAX_DOT_TIP, MAX_USDC_TIP');
@@ -168,7 +167,7 @@ async function main() {
       console.log('  export MAX_USDC_TIP="1000"');
       console.log('  export ASSET_HUB_RPC="wss://polkadot-asset-hub-rpc.polkadot.io"');
     }
-    
+
     process.exit(1);
   } finally {
     // Clean up

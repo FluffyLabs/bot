@@ -136,7 +136,7 @@ export function setupTippingBot(app: Probot) {
             `**To**: \`${tip.recipientAddress}\`\n` +
             `**Amount**: ${tip.amount} ${tip.asset}\n` +
             `${tip.comment ? `**Message**: ${tip.comment}\n` : ""}` +
-            `\n**Transaction Hash**: \`[${txResult.transactionHash}](${txResult.explorerUrl})\`\n`
+            `\n**Transaction Hash**: [${txResult.transactionHash}](${txResult.explorerUrl})\n`
         });
         context.log.info(`[BOT] ✅ Success message updated - tip processing complete!`);
 
