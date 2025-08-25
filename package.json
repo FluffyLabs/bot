@@ -26,7 +26,7 @@
   "dependencies": {
     "@polkadot-api/descriptors": "file:.papi/descriptors",
     "@polkadot-api/known-chains": "^0.9.4",
-    "@polkadot-api/signer": "^0.2.2",
+    "@polkadot-api/signer": "^0.2.6",
     "@polkadot-api/substrate-bindings": "^0.14.0",
     "@polkadot-api/substrate-client": "^0.4.1",
     "@polkadot/util": "^13.5.1",
