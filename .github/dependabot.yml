@@ -5,6 +5,7 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    auto-merge: true
     commit-message:
       prefix: "deps"
       prefix-development: "deps-dev"
