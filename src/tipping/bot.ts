@@ -50,7 +50,7 @@ export function setupTippingBot(app: Probot) {
         config.blockchain.maxDotTip,
         config.blockchain.maxUsdcTip,
       );
-      context.log.info(`[BOT] 📊 Tip processing result:`, { success: result.success, errorMessage: result.errorMessage });
+      context.log.info(`[BOT] 📊 Tip processing result: success=${result.success}, errorMessage=${result.errorMessage}`);
 
       // Add reaction when a tip command is detected
       if (result.tipCommand || result.isTipAttempt) {
@@ -90,12 +90,7 @@ export function setupTippingBot(app: Probot) {
       // Tip is valid - send blockchain transaction
       const tip = result.tipCommand!;
       context.log.info(`[BOT] ✅ Tip is valid!`);
-      context.log.info(`[BOT] 💰 Tip details:`, {
-        recipient: tip.recipientAddress,
-        amount: tip.amount,
-        asset: tip.asset,
-        comment: tip.comment || 'none'
-      });
+      context.log.info(`[BOT] 💰 Tip details: recipient=${tip.recipientAddress}, amount=${tip.amount}, asset=${tip.asset}, comment=${tip.comment || 'none'}`);
 
       // Post initial confirmation
       context.log.info(`[BOT] 💬 Posting initial confirmation to GitHub...`);
@@ -118,11 +113,7 @@ export function setupTippingBot(app: Probot) {
       );
       context.log.info(`[BOT] 🚀 Sending blockchain transaction...`);
       const txResult = await blockchainService.sendTip(tip);
-      context.log.info(`[BOT] 📡 Blockchain transaction result:`, {
-        success: txResult.success,
-        txHash: txResult.transactionHash,
-        error: txResult.error
-      });
+      context.log.info(`[BOT] 📡 Blockchain transaction result: success=${txResult.success}, txHash=${txResult.transactionHash}, error=${txResult.error}`);
 
       // Update initial comment with transaction result
       if (txResult.success) {
@@ -144,11 +135,7 @@ export function setupTippingBot(app: Probot) {
         context.log.info(`[BOT] 💰 Checking wallet balance for low balance warnings...`);
         try {
           const balanceResult = await blockchainService.checkBalance();
-          context.log.info(`[BOT] 📊 Balance check result:`, {
-            success: balanceResult.success,
-            dotBalance: balanceResult.dotBalance.toString(),
-            usdcBalance: balanceResult.usdcBalance.toString()
-          });
+          context.log.info(`[BOT] 📊 Balance check result: success=${balanceResult.success}, dotBalance=${balanceResult.dotBalance.toString()}, usdcBalance=${balanceResult.usdcBalance.toString()}`);
 
           if (balanceResult.success) {
             const warnings = checkBalanceWarnings(
