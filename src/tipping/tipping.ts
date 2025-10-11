@@ -1,5 +1,5 @@
 import { CommentParser } from "./parser.js";
-import { checkAuthorization } from "./authorization.js";
+import { checkAuthorization } from "../common/authorization.js";
 import type { TipProcessingResult } from "./types.js";
 import { GitHubApi } from "../types.js";
 

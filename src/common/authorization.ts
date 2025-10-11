@@ -2,7 +2,7 @@ import { AuthorizationResult, GitHubApi } from "../types.js";
 import { checkMembership } from "./membership.js";
 
 /**
- * Check if a user is authorized to send tips
+ * Check if a user is authorized to perform actions
  */
 export async function checkAuthorization(
   octokit: GitHubApi,
@@ -11,7 +11,7 @@ export async function checkAuthorization(
   team: string,
 ): Promise<AuthorizationResult> {
   console.log(`[AUTH] 🔐 Checking authorization for @${username} in ${org}/${team}`);
-  
+
   try {
     console.log(`[AUTH] 👥 Checking membership...`);
     const membershipResult = await checkMembership(
@@ -20,11 +20,7 @@ export async function checkAuthorization(
       team,
       username,
     );
-    console.log(`[AUTH] 📊 Membership check result:`, { 
-      isMember: membershipResult.isMember, 
-      state: membershipResult.state,
-      error: membershipResult.error 
-    });
+    console.log(`[AUTH] 📊 Membership check result: isMember=${membershipResult.isMember}, state=${membershipResult.state}, error=${membershipResult.error}`);
 
     if (membershipResult.isMember) {
       console.log(`[AUTH] ✅ User @${username} is authorized (active member)`);
@@ -67,7 +63,7 @@ export async function checkAuthorization(
 }
 
 /**
- * Simple boolean check if user can tip
+ * Simple boolean check if user is authorized
  */
 export async function canUserTip(
   octokit: GitHubApi,
