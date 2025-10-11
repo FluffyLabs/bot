@@ -1,4 +1,4 @@
-import { SupportedAsset, TippingConfig } from "./tipping/types.js";
+import { SupportedAsset, TippingConfig, BotConfig } from "./tipping/types.js";
 
 class ConfigError extends Error {
   constructor(message: string) {
@@ -69,8 +69,40 @@ function loadConfig(): TippingConfig {
   }
 }
 
+function loadBotConfig(): BotConfig {
+  try {
+    const tippingConfig = loadConfig();
+
+    // Benchmark configuration is optional - only enable if all required env vars are set
+    const benchmarkSourceRepo = process.env.BENCHMARK_SOURCE_REPO;
+    const benchmarkTargetRepo = process.env.BENCHMARK_TARGET_REPO;
+    const benchmarkWorkflowFile = process.env.BENCHMARK_WORKFLOW_FILE;
+
+    const config: BotConfig = {
+      ...tippingConfig,
+    };
+
+    // Only add benchmark config if all required variables are present
+    if (benchmarkSourceRepo && benchmarkTargetRepo && benchmarkWorkflowFile) {
+      config.benchmark = {
+        targetRepo: benchmarkTargetRepo,
+        workflowFile: benchmarkWorkflowFile,
+        allowedSourceRepo: benchmarkSourceRepo,
+      };
+    }
+
+    return config;
+  } catch (error) {
+    if (error instanceof ConfigError) {
+      throw error;
+    }
+    throw new ConfigError(`Failed to load bot configuration: ${error}`);
+  }
+}
+
 // Cache the config but allow reloading
 let cachedConfig: TippingConfig | null = null;
+let cachedBotConfig: BotConfig | null = null;
 
 // Export function to get config (loads once, then caches)
 export function getConfig(): TippingConfig {
@@ -80,9 +112,18 @@ export function getConfig(): TippingConfig {
   return cachedConfig;
 }
 
+// Export function to get full bot config (loads once, then caches)
+export function getBotConfig(): BotConfig {
+  if (!cachedBotConfig) {
+    cachedBotConfig = loadBotConfig();
+  }
+  return cachedBotConfig;
+}
+
 // Export function to reload config (useful for tests)
 export function reloadConfig(): TippingConfig {
   cachedConfig = null;
+  cachedBotConfig = null;
   return getConfig();
 }
 

@@ -35,6 +35,14 @@ export interface TippingConfig {
   };
 }
 
+export interface BotConfig extends TippingConfig {
+  benchmark?: {
+    targetRepo: string;
+    workflowFile: string;
+    allowedSourceRepo: string;
+  };
+}
+
 // Supported assets enum
 export enum SupportedAsset {
   DOT = 'DOT',

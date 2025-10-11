@@ -3,7 +3,7 @@ import { processTipComment, containsBotMention } from '../../src/tipping/tipping
 import type { GitHubApi } from '../../src/types.js';
 
 import { CommentParser } from '../../src/tipping/parser.js';
-import { checkAuthorization } from '../../src/tipping/authorization.js';
+import { checkAuthorization } from '../../src/common/authorization.js';
 
 // Mock the modules
 vi.mock('../../src/tipping/parser.js', () => ({
@@ -13,7 +13,7 @@ vi.mock('../../src/tipping/parser.js', () => ({
   }
 }));
 
-vi.mock('../../src/tipping/authorization.js', () => ({
+vi.mock('../../src/common/authorization.js', () => ({
   checkAuthorization: vi.fn(),
 }));
 
