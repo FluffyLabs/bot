@@ -1,5 +1,5 @@
 import { BenchmarkParser } from "./parser.js";
-import { checkAuthorization } from "../tipping/authorization.js";
+import { checkAuthorization } from "../common/authorization.js";
 import type { BenchmarkProcessingResult, BenchmarkConfig } from "./types.js";
 import type { GitHubApi } from "../types.js";
 

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { GitHubApi } from '../../src/types.js';
-import { canUserTip, checkAuthorization } from '../../src/tipping/authorization.js';
+import { canUserTip, checkAuthorization } from '../../src/common/authorization.js';
 
 describe('Authorization', () => {
   let mockOctokit: GitHubApi;
