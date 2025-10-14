@@ -113,7 +113,7 @@ export async function triggerBenchmarkWorkflow(
   console.log(`[BENCHMARK] 🔢 PR number: ${prNumber}`);
 
   try {
-    await octokit.actions.createWorkflowDispatch({
+    await octokit.rest.actions.createWorkflowDispatch({
       owner: org,
       repo: benchmarkConfig.targetRepo,
       workflow_id: benchmarkConfig.workflowFile,
