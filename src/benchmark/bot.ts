@@ -14,6 +14,12 @@ export function setupBenchmarkBot(app: Probot) {
     ["issue_comment.created", "pull_request_review_comment.created"],
     async (context) => {
       const comment = context.payload.comment;
+
+      // Skip if no user info
+      if (!comment.user) {
+        return;
+      }
+
       const author = comment.user.login;
 
       // Skip bot comments
@@ -52,7 +58,7 @@ export function setupBenchmarkBot(app: Probot) {
 
       if (!prNumber) {
         context.log.info(`[BENCHMARK_BOT] ❌ Could not determine PR number or not a pull request`);
-        await context.octokit.reactions.createForIssueComment({
+        await context.octokit.rest.reactions.createForIssueComment({
           ...context.issue(),
           comment_id: comment.id,
           content: "-1",
@@ -82,14 +88,14 @@ export function setupBenchmarkBot(app: Probot) {
       if (result.isBenchmarkAttempt) {
         if (result.isAuthorized && result.success) {
           context.log.info(`[BENCHMARK_BOT] 👁️ Adding 'eyes' reaction for authorized user`);
-          await context.octokit.reactions.createForIssueComment({
+          await context.octokit.rest.reactions.createForIssueComment({
             ...context.issue(),
             comment_id: comment.id,
             content: "eyes",
           });
         } else {
           context.log.info(`[BENCHMARK_BOT] 👎 Adding 'thumbsdown' reaction for unauthorized/failed attempt`);
-          await context.octokit.reactions.createForIssueComment({
+          await context.octokit.rest.reactions.createForIssueComment({
             ...context.issue(),
             comment_id: comment.id,
             content: "-1",
@@ -102,7 +108,7 @@ export function setupBenchmarkBot(app: Probot) {
         if (result.errorMessage && result.isBenchmarkAttempt && result.isAuthorized) {
           context.log.info(`[BENCHMARK_BOT] ❌ Benchmark processing failed: ${result.errorMessage}`);
           context.log.info(`[BENCHMARK_BOT] 💬 Posting error message to GitHub...`);
-          await context.octokit.issues.createComment({
+          await context.octokit.rest.issues.createComment({
             ...context.issue(),
             body: `❌ ${result.errorMessage}`,
           });
@@ -119,7 +125,7 @@ export function setupBenchmarkBot(app: Probot) {
 
       // Post initial confirmation
       context.log.info(`[BENCHMARK_BOT] 💬 Posting initial confirmation to GitHub...`);
-      const initialComment = await context.octokit.issues.createComment({
+      const initialComment = await context.octokit.rest.issues.createComment({
         ...context.issue(),
         body:
           `⏳ **Triggering benchmark** for PR #${prNumber}\n` +
@@ -141,7 +147,7 @@ export function setupBenchmarkBot(app: Probot) {
       // Update initial comment with result
       if (workflowResult.success) {
         context.log.info(`[BENCHMARK_BOT] 🎉 Workflow triggered successfully! Updating comment...`);
-        await context.octokit.issues.updateComment({
+        await context.octokit.rest.issues.updateComment({
           ...context.issue(),
           comment_id: initialComment.data.id,
           body:
@@ -154,7 +160,7 @@ export function setupBenchmarkBot(app: Probot) {
         context.log.info(`[BENCHMARK_BOT] ✅ Success message updated - benchmark processing complete!`);
       } else {
         context.log.info(`[BENCHMARK_BOT] ❌ Workflow trigger failed! Updating comment...`);
-        await context.octokit.issues.updateComment({
+        await context.octokit.rest.issues.updateComment({
           ...context.issue(),
           comment_id: initialComment.data.id,
           body:

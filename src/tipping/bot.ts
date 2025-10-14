@@ -15,6 +15,12 @@ export function setupTippingBot(app: Probot) {
       "issue_comment.created", "pull_request_review_comment.created"],
     async (context) => {
       const comment = context.payload.comment;
+
+      // Skip if no user info
+      if (!comment.user) {
+        return;
+      }
+
       const author = comment.user.login;
 
       context.log.info(`[BOT] 📝 New comment received from @${author}`);
@@ -56,14 +62,14 @@ export function setupTippingBot(app: Probot) {
       if (result.tipCommand || result.isTipAttempt) {
         if (result.isAuthorized) {
           context.log.info(`[BOT] 👁️ Adding 'eyes' reaction for authorized user`);
-          await context.octokit.reactions.createForIssueComment({
+          await context.octokit.rest.reactions.createForIssueComment({
             ...context.issue(),
             comment_id: comment.id,
             content: "eyes",
           });
         } else {
           context.log.info(`[BOT] 👎 Adding 'thumbsdown' reaction for unauthorized user`);
-          await context.octokit.reactions.createForIssueComment({
+          await context.octokit.rest.reactions.createForIssueComment({
             ...context.issue(),
             comment_id: comment.id,
             content: "-1",
@@ -76,7 +82,7 @@ export function setupTippingBot(app: Probot) {
         if (result.errorMessage && result.isTipAttempt && result.isAuthorized) {
           context.log.info(`[BOT] ❌ Tip processing failed: ${result.errorMessage}`);
           context.log.info(`[BOT] 💬 Posting error message to GitHub...`);
-          await context.octokit.issues.createComment({
+          await context.octokit.rest.issues.createComment({
             ...context.issue(),
             body: `❌ ${result.errorMessage}`,
           });
@@ -94,7 +100,7 @@ export function setupTippingBot(app: Probot) {
 
       // Post initial confirmation
       context.log.info(`[BOT] 💬 Posting initial confirmation to GitHub...`);
-      const initialComment = await context.octokit.issues.createComment({
+      const initialComment = await context.octokit.rest.issues.createComment({
         ...context.issue(),
         body:
           `⏳ **Processing tip** from @${author}\n` +
@@ -118,7 +124,7 @@ export function setupTippingBot(app: Probot) {
       // Update initial comment with transaction result
       if (txResult.success) {
         context.log.info(`[BOT] 🎉 Transaction successful! Updating initial comment...`);
-        await context.octokit.issues.updateComment({
+        await context.octokit.rest.issues.updateComment({
           ...context.issue(),
           comment_id: initialComment.data.id,
           body:
@@ -158,7 +164,7 @@ export function setupTippingBot(app: Probot) {
               warningMessage += "\n💡 Please refill the wallet to continue tipping operations.";
 
               context.log.info(`[BOT] 💬 Posting low balance warning...`);
-              await context.octokit.issues.createComment({
+              await context.octokit.rest.issues.createComment({
                 ...context.issue(),
                 body: warningMessage,
               });
@@ -174,7 +180,7 @@ export function setupTippingBot(app: Probot) {
         }
       } else {
         context.log.info(`[BOT] ❌ Transaction failed! Updating initial comment...`);
-        await context.octokit.issues.updateComment({
+        await context.octokit.rest.issues.updateComment({
           ...context.issue(),
           comment_id: initialComment.data.id,
           body:`
